@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       durasi_menit:
-        description: 'Durasi sesi (menit, 10–350)'
+        description: 'Durasi sesi (menit, 10–342)'
         required: false
-        default: '350'
+        default: '342'
         type: string
       hostname:
         description: 'Prefix hostname Tailscale'
@@ -59,7 +59,7 @@ jobs:
     runs-on: ${{ inputs.runner || 'ubuntu-24.04' }}
     timeout-minutes: 360
     env:
-      DUR: ${{ inputs.durasi_menit || '350' }}
+      DUR: ${{ inputs.durasi_menit || '342' }}
       VPS_HOST: ${{ inputs.hostname || 'vpsfree' }}
       VPS_USER: ${{ inputs.vps_user || 'vps' }}
       RUNNER_IMAGE: ${{ inputs.runner || 'ubuntu-24.04' }}
