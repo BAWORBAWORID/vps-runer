@@ -49,7 +49,7 @@ Opsional:
 
 1. Tab **Actions** → **VpsFree — VPS 6 Jam** (`vps-6h.yml`) → **Run workflow**.
 2. Isi input (opsional, sudah ada default):
-   - `durasi_menit` — 10–342 menit (default `342`).
+   - `durasi_menit` — 10–350 menit (default `350`).
    - `hostname` — prefix hostname Tailscale (default `vpsfree`).
    - `vps_user` — nama user sudo (default `vps`; root selalu aktif).
    - `runner` — `ubuntu-24.04`, `ubuntu-22.04`, atau `ubuntu-latest`.
@@ -69,8 +69,9 @@ IP dan status juga bisa dibaca dari branch `status` → `vps-status.json`.
 
 ## 5. Berhenti & perpanjangan (renewal)
 
-- **Auto-stop:** sesi berhenti sendiri 3 menit sebelum `expires_at`. Batas keras job 360 menit.
-- **Renewal otomatis** (`perpanjang_otomatis=ya`): `keepalive.sh` menyimpan state lalu men-dispatch sesi berikutnya sekitar **20 menit sebelum** waktu habis, sehingga sesi baru sudah pulih saat sesi lama berakhir. Sesi lama tetap melayani sampai batas waktunya; renewal **tidak** menghapus state.
+- **Auto-stop:** sesi berhenti sendiri 2 menit sebelum `expires_at` (sebelum 6 jam pas) agar runner lama selesai bersih dan runner baru langsung jalan. Batas keras job 360 menit.
+- **Auto-backup 20 menit sebelum waktu habis:** `keepalive.sh` otomatis menyimpan checkpoint data sebelum waktu habis.
+- **Renewal otomatis 5 menit sebelum waktu habis** (`perpanjang_otomatis=ya`): `keepalive.sh` menyimpan state final lalu otomatis men-dispatch sesi baru ke GitHub Actions. Sesi lama tetap melayani sampai menit ke-348 lalu stop tertib, dan sesi baru langsung menyambung tanpa perlu bolak-balik ke GitHub. Renewal **tidak** menghapus state.
 - **State** disimpan setiap 15 menit dan saat sesi berakhir ke GitHub Release tag `vpsfree-state-latest` (asset `vps-state.tar.gz`), plus artifact `vpsfree-state`.
 - Yang ikut dipulihkan: isi home (`/home/<user>`), `/etc/ssh/sshd_config.d`, dan `/var/lib/tailscale` (agar node Tailscale memakai identitas/IP yang sama).
 
