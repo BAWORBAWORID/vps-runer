@@ -21,9 +21,9 @@ case "$VPS_PASSWORD" in
 esac
 
 # ---------- durasi (menit) ----------
-DUR="${DUR:-350}"; DUR="${DUR//[^0-9]/}"; [ -z "$DUR" ] && DUR=350
-[ "$DUR" -lt 10 ] && DUR=350
-[ "$DUR" -gt 350 ] && DUR=350   # margin aman 10 menit di bawah timeout workflow 360 (6 jam)
+DUR="${DUR:-360}"; DUR="${DUR//[^0-9]/}"; [ -z "$DUR" ] && DUR=342
+[ "$DUR" -lt 10 ] && DUR=342
+[ "$DUR" -gt 342 ] && DUR=342   # margin aman di bawah timeout workflow 360
 
 # ---------- user ----------
 VPS_USER="${VPS_USER:-vps}"
@@ -134,14 +134,13 @@ update_status "$(jq -n \
   --arg number "${GITHUB_RUN_NUMBER:-}" \
   --arg url "https://github.com/${GITHUB_REPOSITORY:-}/actions/runs/${GITHUB_RUN_ID:-}" \
   --arg renewal "${RENEWAL:-tidak}" \
-  --arg auto_renew "${PERPANJANG_OTOMATIS:-ya}" \
   '{active:true, hostname:$host, os:$os, kernel:$kernel,
     cpu_threads:$cpu, ram_gb:$ram, disk_free_gb:$disk,
     ssh_port:22, ssh_user:$user, ssh_listen:$listen,
     public_ip:"", tailscale_ip:"", tailscale_dns:"",
     started_at:$started, expires_at:$expires, duration_menit:$dur,
     run_id:$runid, run_attempt:$attempt, run_number:$number, run_url:$url,
-    mode:"vpsfree", perpanjang_otomatis:$auto_renew, renewal:$renewal,
+    mode:"vpsfree", renewal:$renewal,
     akses:{mode:"tailscale", tailscale:{status:"pending"}}}')"
 
 {
