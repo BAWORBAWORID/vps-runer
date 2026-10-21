@@ -39,16 +39,23 @@ log "Menjalankan OpenSSH Server di port 22..."
 
 # 3. Jalankan Bore TCP Tunnel
 BORE_SERVER="${BORE_SERVER:-bore.pub}"
-BORE_PORT="${BORE_PORT:-0603}"
 BORE_LOG="/tmp/bore.log"
+
+SAVED_PORT=""
+if [ -f /etc/vpsfree/bore_port ]; then
+  SAVED_PORT="$(cat /etc/vpsfree/bore_port 2>/dev/null | tr -dc '0-9')"
+fi
+TARGET_PORT="${BORE_PORT:-$SAVED_PORT}"
 
 start_bore() {
   local port_args=()
-  if [ -n "$BORE_PORT" ] && [ "$BORE_PORT" != "0" ]; then
-    port_args=("--port" "$BORE_PORT")
+  if [ -n "$TARGET_PORT" ] && [ "$TARGET_PORT" != "0" ]; then
+    port_args=("--port" "$TARGET_PORT")
+    log "Menghubungkan tunnel bore ke $BORE_SERVER dengan port: $TARGET_PORT..."
+  else
+    log "Menghubungkan tunnel bore ke $BORE_SERVER (alokasi port dinamis otomatis)..."
   fi
 
-  log "Menghubungkan tunnel bore ke $BORE_SERVER..."
   bore local 22 --to "$BORE_SERVER" "${port_args[@]}" ${BORE_SECRET:+--secret "$BORE_SECRET"} > "$BORE_LOG" 2>&1 &
   BORE_PID=$!
 }
@@ -56,9 +63,9 @@ start_bore() {
 start_bore
 sleep 3
 
-# Jika gagal karena port ditolak server, coba tanpa flag --port (alokasi port dinamis)
+# Jika gagal karena port ditolak server, coba alokasi port dinamis
 if ! kill -0 "$BORE_PID" 2>/dev/null; then
-  log "Port '$BORE_PORT' ditolak oleh server $BORE_SERVER. Mencoba alokasi port dinamis..."
+  log "Port '$TARGET_PORT' ditolak server $BORE_SERVER. Mencoba alokasi port dinamis..."
   bore local 22 --to "$BORE_SERVER" ${BORE_SECRET:+--secret "$BORE_SECRET"} > "$BORE_LOG" 2>&1 &
   BORE_PID=$!
   sleep 3
@@ -66,19 +73,22 @@ fi
 
 # Dapatkan port publik dari log bore
 REMOTE_PORT=""
-for _ in $(seq 1 15); do
+for _ in $(seq 1 20); do
   if [ -f "$BORE_LOG" ]; then
-    REMOTE_PORT="$(grep -oE 'remote_port=[0-9]+' "$BORE_LOG" 2>/dev/null | tail -1 | cut -d= -f2 || true)"
-    [ -z "$REMOTE_PORT" ] && REMOTE_PORT="$(grep -oE 'listening at [^:]+:[0-9]+' "$BORE_LOG" 2>/dev/null | tail -1 | awk -F: '{print $NF}' || true)"
+    REMOTE_PORT="$(sed 's/\x1b\[[0-9;]*m//g' "$BORE_LOG" 2>/dev/null | grep -oE 'remote_port=[0-9]+' | tail -1 | cut -d= -f2 || true)"
+    [ -z "$REMOTE_PORT" ] && REMOTE_PORT="$(sed 's/\x1b\[[0-9;]*m//g' "$BORE_LOG" 2>/dev/null | grep -oE 'listening at [^:]+:[0-9]+' | tail -1 | awk -F: '{print $NF}' || true)"
     [ -n "$REMOTE_PORT" ] && break
   fi
   sleep 1
 done
 
 if [ -n "$REMOTE_PORT" ]; then
+  mkdir -p /etc/vpsfree
+  printf '%s\n' "$REMOTE_PORT" > /etc/vpsfree/bore_port
   log "=========================================================="
   log "BORE TUNNEL AKTIF!"
   log "SSH Login (Root): ssh -p $REMOTE_PORT root@$BORE_SERVER"
+  log "Port Terdaftar  : $REMOTE_PORT (tersimpan untuk restart/renewal)"
   log "Password        : (sesuai env VPS_PASSWORD)"
   log "=========================================================="
 else

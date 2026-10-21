@@ -80,6 +80,7 @@ if id -u "$u" >/dev/null 2>&1 && [ -d "$home" ]; then sudo chown -R "$u:$u" "$ho
 sudo chown -R root:root /var/lib/tailscale 2>/dev/null || true
 sudo chmod 700 /var/lib/tailscale 2>/dev/null || true
 sudo chmod 755 /etc/ssh/sshd_config.d 2>/dev/null || true
+[ -d /etc/vpsfree ] && sudo chmod 755 /etc/vpsfree 2>/dev/null || true
 
 # Drop-in sshd dari arsip bisa berbeda dari yang divalidasi setup-vps: validasi ulang.
 conf=/etc/ssh/sshd_config.d/99-vpsfree.conf

@@ -66,7 +66,7 @@ jobs:
       PERPANJANG_OTOMATIS: ${{ inputs.perpanjang_otomatis || 'ya' }}
       RENEWAL: ${{ inputs.renewal || 'tidak' }}
       VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
-      BORE_PORT: ${{ secrets.BORE_PORT || '0603' }}
+      BORE_PORT: ${{ secrets.BORE_PORT || '' }}
       BORE_SERVER: ${{ secrets.BORE_SERVER || 'bore.pub' }}
       CLEANUP_TOKEN: ${{ secrets.CLEANUP_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

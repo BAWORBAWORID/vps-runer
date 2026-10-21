@@ -32,7 +32,7 @@ Buka **Settings → Secrets and variables → Actions → New repository secret*
 | Variabel | Deskripsi |
 |---|---|
 | `VPS_PASSWORD` | Password untuk login SSH user **root**. Minimal 8 karakter. |
-| `BORE_PORT` | (Opsional) Request port spesifik di `bore.pub` (default `0603` / otomatis dinamis). |
+| `BORE_PORT` | (Opsional) Tidak perlu diset. Port otomatis dialokasikan dan disimpan agar tetap sama saat renewal. |
 
 ---
 
@@ -46,17 +46,15 @@ Buka **Settings → Secrets and variables → Actions → New repository secret*
 ssh -p <port> root@bore.pub
 ```
 
-IP dan status juga bisa dibaca dari branch `status` → `vps-status.json`.
+Status dan port aktif juga otomatis tercatat di branch `status` → `vps-status.json`.
 
 ---
 
 ## 5. Berhenti & perpanjangan (renewal)
 
-- **Auto-stop:** sesi berhenti sendiri 2 menit sebelum `expires_at` (sebelum 6 jam pas) agar runner lama selesai bersih dan runner baru langsung jalan. Batas keras job 360 menit.
-- **Auto-backup 20 menit sebelum waktu habis:** `keepalive.sh` otomatis menyimpan checkpoint data sebelum waktu habis.
-- **Renewal otomatis 5 menit sebelum waktu habis** (`perpanjang_otomatis=ya`): `keepalive.sh` menyimpan state final lalu otomatis men-dispatch sesi baru ke GitHub Actions. Sesi lama tetap melayani sampai menit ke-348 lalu stop tertib, dan sesi baru langsung menyambung tanpa perlu bolak-balik ke GitHub. Renewal **tidak** menghapus state.
-- **State** disimpan setiap 15 menit dan saat sesi berakhir ke GitHub Release tag `vpsfree-state-latest` (asset `vps-state.tar.gz`), plus artifact `vpsfree-state`.
-- Yang ikut dipulihkan: isi home (`/home/<user>`), `/etc/ssh/sshd_config.d`, dan `/var/lib/tailscale` (agar node Tailscale memakai identitas/IP yang sama).
+- **Batas Waktu GitHub Actions:** Runner GitHub Actions memiliki batas keras maksimum **6 jam (360 menit)** per job.
+- **Renewal Otomatis Antar Sesi:** Agar VPS bisa berjalan terus tanpa batas 6 jam, `keepalive.sh` otomatis men-dispatch sesi 6 jam berikutnya sebelum waktu habis (`perpanjang_otomatis=ya`).
+- **Konsistensi Port saat Renewal:** Port yang dialokasikan di sesi pertama disimpan ke `/etc/vpsfree/bore_port` dan dipulihkan saat renewal, sehingga Anda tetap menggunakan port yang sama (`ssh -p <port> root@bore.pub`) di setiap perpanjangan sesi tanpa perlu ganti port!
 
 > Saat state dipulihkan, nama node Tailscale dipertahankan (tidak diganti tiap renewal); nama `<prefix>-<nomor-run>` hanya dipakai pada sesi pertama.
 

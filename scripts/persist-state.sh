@@ -25,6 +25,7 @@ arc="$out/vps-state.tar.gz"; tmp="$arc.tmp"
 paths=()
 [ -d "$home" ] && paths+=("$home")
 [ -d /etc/ssh/sshd_config.d ] && paths+=("/etc/ssh/sshd_config.d")
+[ -d /etc/vpsfree ] && paths+=("/etc/vpsfree")
 [ -d /var/lib/tailscale ] && paths+=("/var/lib/tailscale")
 [ -d /opt/vpsfree ] && paths+=("/opt/vpsfree")
 
