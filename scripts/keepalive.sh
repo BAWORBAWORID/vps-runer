@@ -60,13 +60,13 @@ while :; do
 
   if ! pgrep -f "bore local" >/dev/null 2>&1; then
     log 'Bore tunnel terputus — merestart...'
-    nohup bore local 22 --to "${BORE_SERVER:-bore.pub}" ${BORE_PORT:+--port "$BORE_PORT"} ${BORE_SECRET:+--secret "$BORE_SECRET"} > /var/log/bore.log 2>&1 &
+    nohup bore local 22 --to "${BORE_SERVER:-bore.pub}" ${BORE_PORT:+--port "$BORE_PORT"} ${BORE_SECRET:+--secret "$BORE_SECRET"} > /tmp/bore.log 2>&1 &
   fi
 
   if [ $((i % 5)) -eq 0 ]; then
     ssh_ok="$(ss -ltn 2>/dev/null | grep -c ':22 ' || true)"
     bore_ok="$(pgrep -fc 'bore local' || true)"
-    bport="$(grep -oE 'remote_port=[0-9]+' /var/log/bore.log 2>/dev/null | tail -1 | cut -d= -f2 || true)"
+    bport="$(grep -oE 'remote_port=[0-9]+' /tmp/bore.log 2>/dev/null | tail -1 | cut -d= -f2 || true)"
     log "detak #$i | sisa ${rem} menit | ssh=$ssh_ok | bore=$bore_ok (port: ${bport:-?})"
   fi
 

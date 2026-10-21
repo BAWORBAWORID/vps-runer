@@ -40,7 +40,9 @@ fi
 
 BORE_SERVER="${BORE_SERVER:-bore.pub}"
 BORE_PORT="${BORE_PORT:-0603}"
-sudo mkdir -p /var/log
+BORE_LOG="/tmp/bore.log"
+touch "$BORE_LOG" 2>/dev/null || sudo touch "$BORE_LOG" 2>/dev/null || true
+chmod 666 "$BORE_LOG" 2>/dev/null || sudo chmod 666 "$BORE_LOG" 2>/dev/null || true
 
 start_bore() {
   local port_args=()
@@ -50,24 +52,24 @@ start_bore() {
 
   log "menghubungkan tunnel bore ke $BORE_SERVER..."
   sudo pkill -f "bore local" 2>/dev/null || true
-  nohup bore local 22 --to "$BORE_SERVER" "${port_args[@]}" ${BORE_SECRET:+--secret "$BORE_SECRET"} > /var/log/bore.log 2>&1 &
+  nohup bore local 22 --to "$BORE_SERVER" "${port_args[@]}" ${BORE_SECRET:+--secret "$BORE_SECRET"} > "$BORE_LOG" 2>&1 &
 }
 
 start_bore
-sleep 2
+sleep 3
 
 # Verifikasi proses hidup, jika gagal port ditolak coba tanpa --port
 if ! pgrep -f "bore local" >/dev/null 2>&1; then
   log "port '$BORE_PORT' ditolak oleh server $BORE_SERVER. Mencoba alokasi port dinamis..."
-  nohup bore local 22 --to "$BORE_SERVER" ${BORE_SECRET:+--secret "$BORE_SECRET"} > /var/log/bore.log 2>&1 &
-  sleep 2
+  nohup bore local 22 --to "$BORE_SERVER" ${BORE_SECRET:+--secret "$BORE_SECRET"} > "$BORE_LOG" 2>&1 &
+  sleep 3
 fi
 
 REMOTE_PORT=""
 for _ in $(seq 1 15); do
-  if [ -f /var/log/bore.log ]; then
-    REMOTE_PORT="$(grep -oE 'remote_port=[0-9]+' /var/log/bore.log 2>/dev/null | tail -1 | cut -d= -f2 || true)"
-    [ -z "$REMOTE_PORT" ] && REMOTE_PORT="$(grep -oE 'listening at [^:]+:[0-9]+' /var/log/bore.log 2>/dev/null | tail -1 | awk -F: '{print $NF}' || true)"
+  if [ -f "$BORE_LOG" ]; then
+    REMOTE_PORT="$(grep -oE 'remote_port=[0-9]+' "$BORE_LOG" 2>/dev/null | tail -1 | cut -d= -f2 || true)"
+    [ -z "$REMOTE_PORT" ] && REMOTE_PORT="$(grep -oE 'listening at [^:]+:[0-9]+' "$BORE_LOG" 2>/dev/null | tail -1 | awk -F: '{print $NF}' || true)"
     [ -n "$REMOTE_PORT" ] && break
   fi
   sleep 1
@@ -75,7 +77,7 @@ done
 
 if [ -z "$REMOTE_PORT" ] || ! pgrep -f "bore local" >/dev/null 2>&1; then
   log 'ERROR: Bore tunnel gagal terhubung. Log:'
-  tail -n 25 /var/log/bore.log || true
+  cat "$BORE_LOG" 2>/dev/null || true
   update_status "$(jq -n '{akses:{mode:"bore",bore:{status:"failed",note:"bore up gagal"}}}')" || true
   exit 1
 fi

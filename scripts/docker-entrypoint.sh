@@ -40,7 +40,7 @@ log "Menjalankan OpenSSH Server di port 22..."
 # 3. Jalankan Bore TCP Tunnel
 BORE_SERVER="${BORE_SERVER:-bore.pub}"
 BORE_PORT="${BORE_PORT:-0603}"
-mkdir -p /var/log
+BORE_LOG="/tmp/bore.log"
 
 start_bore() {
   local port_args=()
@@ -49,27 +49,27 @@ start_bore() {
   fi
 
   log "Menghubungkan tunnel bore ke $BORE_SERVER..."
-  bore local 22 --to "$BORE_SERVER" "${port_args[@]}" ${BORE_SECRET:+--secret "$BORE_SECRET"} > /var/log/bore.log 2>&1 &
+  bore local 22 --to "$BORE_SERVER" "${port_args[@]}" ${BORE_SECRET:+--secret "$BORE_SECRET"} > "$BORE_LOG" 2>&1 &
   BORE_PID=$!
 }
 
 start_bore
-sleep 2
+sleep 3
 
 # Jika gagal karena port ditolak server, coba tanpa flag --port (alokasi port dinamis)
 if ! kill -0 "$BORE_PID" 2>/dev/null; then
   log "Port '$BORE_PORT' ditolak oleh server $BORE_SERVER. Mencoba alokasi port dinamis..."
-  bore local 22 --to "$BORE_SERVER" ${BORE_SECRET:+--secret "$BORE_SECRET"} > /var/log/bore.log 2>&1 &
+  bore local 22 --to "$BORE_SERVER" ${BORE_SECRET:+--secret "$BORE_SECRET"} > "$BORE_LOG" 2>&1 &
   BORE_PID=$!
-  sleep 2
+  sleep 3
 fi
 
 # Dapatkan port publik dari log bore
 REMOTE_PORT=""
-for _ in $(seq 1 10); do
-  if [ -f /var/log/bore.log ]; then
-    REMOTE_PORT="$(grep -oE 'remote_port=[0-9]+' /var/log/bore.log 2>/dev/null | tail -1 | cut -d= -f2 || true)"
-    [ -z "$REMOTE_PORT" ] && REMOTE_PORT="$(grep -oE 'listening at [^:]+:[0-9]+' /var/log/bore.log 2>/dev/null | tail -1 | awk -F: '{print $NF}' || true)"
+for _ in $(seq 1 15); do
+  if [ -f "$BORE_LOG" ]; then
+    REMOTE_PORT="$(grep -oE 'remote_port=[0-9]+' "$BORE_LOG" 2>/dev/null | tail -1 | cut -d= -f2 || true)"
+    [ -z "$REMOTE_PORT" ] && REMOTE_PORT="$(grep -oE 'listening at [^:]+:[0-9]+' "$BORE_LOG" 2>/dev/null | tail -1 | awk -F: '{print $NF}' || true)"
     [ -n "$REMOTE_PORT" ] && break
   fi
   sleep 1
@@ -82,7 +82,7 @@ if [ -n "$REMOTE_PORT" ]; then
   log "Password        : (sesuai env VPS_PASSWORD)"
   log "=========================================================="
 else
-  log "PERINGATAN: Menunggu koneksi bore. Periksa log: cat /var/log/bore.log"
+  log "PERINGATAN: Menunggu koneksi bore. Periksa log: cat $BORE_LOG"
 fi
 
 # 4. Jalankan HTTP Healthcheck endpoint untuk Cloud PaaS (Koyeb/Render/Railway)
