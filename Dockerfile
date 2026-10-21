@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     procps \
     net-tools \
     bash \
+    python3 \
     tzdata \
     && curl -fsSL https://tailscale.com/install.sh | sh \
     && apt-get clean && rm -rf /var/lib/apt/lists/* \
@@ -32,6 +33,6 @@ RUN echo "PermitRootLogin yes" > /etc/ssh/sshd_config.d/99-vpsfree.conf \
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-EXPOSE 22
+EXPOSE 22 8000
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
