@@ -1,5 +1,5 @@
 {
-  "active": true,
+  "active": false,
   "hostname": "vpsfree-3",
   "os": "Ubuntu 24.04.5 LTS",
   "kernel": "7.0.0-1017-azure",
@@ -24,7 +24,11 @@
   "akses": {
     "mode": "bore",
     "bore": {
-      "status": "pending"
+      "status": "offline",
+      "server": "",
+      "port": ""
     }
-  }
+  },
+  "stopped_at": "2026-10-21T17:46:24Z",
+  "ssh_command": ""
 }
