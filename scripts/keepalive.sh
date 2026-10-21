@@ -33,7 +33,7 @@ dispatch_next() {
     --arg dur "${DUR:-360}" --arg host "${VPS_HOST:-vpsfree}" \
     --arg user "${VPS_USER:-vps}" --arg runner "${RUNNER_IMAGE:-ubuntu-24.04}" \
     --arg renew "${PERPANJANG_OTOMATIS:-ya}" \
-    '{ref:"main",inputs:{durasi_menit:$dur,hostname:$host,vps_user:$user,
+    '{ref:"master",inputs:{durasi_menit:$dur,hostname:$host,vps_user:$user,
       runner:$runner,perpanjang_otomatis:$renew,renewal:"ya"}}')"
   curl -fsS -X POST \
     -H "Authorization: Bearer $GITHUB_TOKEN" \

@@ -131,7 +131,7 @@ jobs:
           BODY="$(jq -n \
             --arg dur "$DUR" --arg host "$VPS_HOST" --arg user "$VPS_USER" \
             --arg runner "$RUNNER_IMAGE" --arg renew "$PERPANJANG_OTOMATIS" \
-            '{ref:"main",inputs:{durasi_menit:$dur,hostname:$host,vps_user:$user,
+            '{ref:"master",inputs:{durasi_menit:$dur,hostname:$host,vps_user:$user,
               runner:$runner,perpanjang_otomatis:$renew,renewal:"ya"}}')"
           curl -fsS -X POST \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
