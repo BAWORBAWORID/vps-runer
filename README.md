@@ -125,3 +125,32 @@ CI menjalankan keduanya lewat `.github/workflows/validate-vps.yml` (dipicu saat 
 - Renewal bisa tertunda bila ada run lain di antrean (concurrency group `vpsfree-active-session`).
 - Tidak ada jaminan bebas suspend dari GitHub, kelangsungan IP di luar tailnet, atau cakupan provider Tailscale.
 - Gunakan auth key yang bisa dicabut bila perangkat hilang.
+
+---
+
+## 9. Menjalankan via Docker (Opsional)
+
+Selain dijalankan di GitHub Actions, VpsFree juga dapat di-build dan dijalankan sebagai container Docker mandiri:
+
+```bash
+# Build image
+docker build -t vpsfree .
+
+# Jalankan container (memerlukan NET_ADMIN & /dev/net/tun untuk Tailscale)
+docker run -d \
+  --name vpsfree \
+  --restart unless-stopped \
+  --cap-add=NET_ADMIN \
+  --cap-add=SYS_MODULE \
+  --device=/dev/net/tun:/dev/net/tun \
+  -v tailscale-state:/var/lib/tailscale \
+  -e VPS_PASSWORD="PasswordKuat123" \
+  -e TAILSCALE_AUTH_KEY="tskey-auth-..." \
+  -e VPS_USER="vps" \
+  -e HOSTNAME="vpsfree-docker" \
+  vpsfree
+
+# Atau dengan Docker Compose:
+docker compose up -d
+```
+
