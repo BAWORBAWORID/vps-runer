@@ -1,6 +1,6 @@
 # VpsFree
 
-VPS **Ubuntu Server** yang dijalankan oleh **GitHub Actions** dan diakses lewat **SSH melalui Tailscale privat**. Tidak ada RDP, tidak ada tunnel publik (Pinggy/bore/ngrok/Serveo/localhost.run/Funnel), tidak ada relay publik.
+VPS **Ubuntu Server** yang dijalankan oleh **GitHub Actions** atau **Docker**, diakses lewat **SSH publik melalui Bore tunnel** (`bore.pub`).
 
 Kredit asli: **KallAncrit**. Template: `xykal/XyRDP`.
 
@@ -10,57 +10,40 @@ Kredit asli: **KallAncrit**. Template: `xykal/XyRDP`.
 
 Setiap kali workflow dijalankan, GitHub menyiapkan satu mesin Ubuntu Server sementara (ephemeral):
 
-1. `setup-vps.sh` menyetel password **root** dan user sudo dari secret `VPS_PASSWORD`, serta mengaktifkan SSH (password + root login).
-2. `restore-state.sh` memulihkan data sesi sebelumnya (home, konfigurasi SSH, identitas Tailscale).
-3. `setup-akses.sh` memasang Tailscale dan menyambung ke tailnet-mu. Hanya alamat tailnet `100.64.0.0/10` yang boleh masuk SSH port 22.
-4. `publish-status.sh` menulis status sesi ke branch `status` (`vps-status.json`).
+1. `setup-vps.sh` menyetel password **root** dan user sudo dari secret `VPS_PASSWORD`, serta mengaktifkan OpenSSH Server (Port 22, root login, password + pubkey).
+2. `restore-state.sh` memulihkan data sesi sebelumnya (home, konfigurasi SSH).
+3. `setup-akses.sh` memasang dan menjalankan **Bore tunnel** (`bore local 22 --to bore.pub`).
+4. `publish-status.sh` menulis status sesi dan port SSH publik ke branch `status` (`vps-status.json`).
 5. `keepalive.sh` menjaga mesin tetap hidup, menyimpan state tiap 15 menit, menjadwalkan sesi berikutnya sebelum waktu habis, lalu menghentikan diri sendiri 3 menit sebelum batas waktu.
-
-Karena runner GitHub ephemeral, **data tidak hidup di mesin** — data dipindahkan antar sesi lewat state yang disimpan dan dipulihkan.
 
 ---
 
 ## 2. Prasyarat
 
 - Repository dibuat dari template (`Use this template` di GitHub).
-- Tailnet Tailscale dan sebuah **auth key** (`tskey-auth-...`).
-- Klien Tailscale di perangkat yang dipakai (HP/PC), login ke tailnet yang sama.
-- Actions diizinkan pada repository (repo pribadi biasanya sudah aktif; organisasi mungkin perlu mengaktifkan).
+- Actions diizinkan pada repository.
 
 ---
 
-## 3. Secrets (wajib)
+## 3. Secrets / Environment
 
-Buka **Settings → Secrets and variables → Actions → New repository secret**, isi:
+Buka **Settings → Secrets and variables → Actions → New repository secret**, atau lewat env Docker:
 
-| Secret | Isi |
+| Variabel | Deskripsi |
 |---|---|
-| `VPS_PASSWORD` | Password untuk **root** sekaligus user sudo. Minimal 8 karakter, buat yang kuat dan unik. |
-| `TAILSCALE_AUTH_KEY` | Auth key Tailscale (`tskey-auth-...`). Jangan dibagikan. |
-
-Opsional:
-- `CLEANUP_TOKEN` — PAT dengan scope `repo` bila ingin `cleanup-actions.sh` menghapus run lama (fallback `GITHUB_TOKEN`).
-
-> Password tidak pernah dicetak, di-Base64, atau ditulis ke `vps-status.json`.
+| `VPS_PASSWORD` | Password untuk login SSH user **root**. Minimal 8 karakter. |
+| `BORE_PORT` | (Opsional) Request port spesifik di `bore.pub` (default `0603` / otomatis dinamis). |
 
 ---
 
 ## 4. Menjalankan sesi
 
 1. Tab **Actions** → **VpsFree — VPS 6 Jam** (`vps-6h.yml`) → **Run workflow**.
-2. Isi input (opsional, sudah ada default):
-   - `durasi_menit` — 10–350 menit (default `350`).
-   - `hostname` — prefix hostname Tailscale (default `vpsfree`).
-   - `vps_user` — nama user sudo (default `vps`; root selalu aktif).
-   - `runner` — `ubuntu-24.04`, `ubuntu-22.04`, atau `ubuntu-latest`.
-   - `perpanjang_otomatis` — `ya`/`tidak` (default `ya`).
-3. Tunggu step **Setup akses Tailscale** selesai. Di log akan muncul IP Tailscale (`100.x.x.x`).
-4. Login perangkat ke tailnet yang sama, lalu:
+2. Tunggu step **Setup akses Bore (SSH Publik)** selesai. Di log akan muncul port tunnel Bore.
+3. Konek langsung sebagai user **root** menggunakan password dari terminal (HP/PC/Termux):
 
 ```bash
-ssh vps@100.x.x.x -p 22
-# atau sebagai root:
-ssh root@100.x.x.x -p 22
+ssh -p <port> root@bore.pub
 ```
 
 IP dan status juga bisa dibaca dari branch `status` → `vps-status.json`.
@@ -136,21 +119,16 @@ Selain dijalankan di GitHub Actions, VpsFree juga dapat di-build dan dijalankan 
 # Build image
 docker build -t vpsfree .
 
-# Jalankan container (memerlukan NET_ADMIN & /dev/net/tun untuk Tailscale)
+# Jalankan container (terhubung otomatis ke bore.pub)
 docker run -d \
   --name vpsfree \
   --restart unless-stopped \
-  --cap-add=NET_ADMIN \
-  --cap-add=SYS_MODULE \
-  --device=/dev/net/tun:/dev/net/tun \
-  -v tailscale-state:/var/lib/tailscale \
   -e VPS_PASSWORD="PasswordKuat123" \
-  -e TAILSCALE_AUTH_KEY="tskey-auth-..." \
+  -e BORE_PORT="0603" \
   -e VPS_USER="vps" \
-  -e HOSTNAME="vpsfree-docker" \
   vpsfree
 
-# Atau dengan Docker Compose:
-docker compose up -d
+# Cek port SSH publik yang didapat dari bore:
+docker logs vpsfree | grep "SSH Command"
 ```
 

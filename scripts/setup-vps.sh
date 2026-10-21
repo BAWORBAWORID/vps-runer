@@ -53,9 +53,10 @@ sudo systemctl enable --now ssh >/dev/null 2>&1 || sudo systemctl enable --now s
 
 # ---------- password superuser / root ----------
 printf 'root:%s\n' "$VPS_PASSWORD" | sudo chpasswd
-log 'password root diset dari VPS_PASSWORD (tidak ditampilkan).'
+log 'password root diset dari VPS_PASSWORD.'
 
-# ---------- user sudo ----------
+# ---------- user sudo opsional (default tetap layani root) ----------
+VPS_USER="${VPS_USER:-root}"
 if [ "$VPS_USER" != "root" ]; then
   if ! id -u "$VPS_USER" >/dev/null 2>&1; then
     sudo useradd -m -s /bin/bash "$VPS_USER"
@@ -64,16 +65,15 @@ if [ "$VPS_USER" != "root" ]; then
   sudo usermod -aG sudo "$VPS_USER" 2>/dev/null || true
   printf '%s ALL=(ALL) NOPASSWD:ALL\n' "$VPS_USER" | sudo tee /etc/sudoers.d/90-vpsfree >/dev/null
   sudo chmod 440 /etc/sudoers.d/90-vpsfree
-  log "user sudo '$VPS_USER' siap (password sama, NOPASSWD sudo)."
 fi
 
-# ---------- sshd: password + root login ----------
+# ---------- sshd: Port 22 + PermitRootLogin + PasswordAuthentication ----------
 sudo mkdir -p /etc/ssh/sshd_config.d
 sudo tee /etc/ssh/sshd_config.d/99-vpsfree.conf >/dev/null <<'EOF'
+Port 22
 PermitRootLogin yes
 PasswordAuthentication yes
 KbdInteractiveAuthentication yes
-PubkeyAuthentication yes
 UsePAM yes
 EOF
 
@@ -83,19 +83,13 @@ if ! sudo sshd -t 2>/dev/null; then
 fi
 sudo systemctl restart ssh >/dev/null 2>&1 || sudo systemctl restart sshd >/dev/null 2>&1 || true
 
-# Verifikasi nilai EFEKTIF (main sshd_config bisa menimpa Include).
+# Verifikasi nilai EFEKTIF
 EFF_ROOT="$(sudo sshd -T 2>/dev/null | awk '/^permitrootlogin /{print $2}')"
 EFF_PW="$(sudo sshd -T 2>/dev/null | awk '/^passwordauthentication /{print $2}')"
 if [ "$EFF_ROOT" != 'yes' ] || [ "$EFF_PW" != 'yes' ]; then
   log "menimpa langsung di sshd_config (root='$EFF_ROOT', password='$EFF_PW')..."
-  printf '\nPermitRootLogin yes\nPasswordAuthentication yes\n' | sudo tee -a /etc/ssh/sshd_config >/dev/null
-  if sudo sshd -t 2>/dev/null; then
-    sudo systemctl restart ssh >/dev/null 2>&1 || sudo systemctl restart sshd >/dev/null 2>&1 || true
-  else
-    log 'ERROR: sshd_config tetap tidak valid — periksa manual.'
-  fi
-  EFF_ROOT="$(sudo sshd -T 2>/dev/null | awk '/^permitrootlogin /{print $2}')"
-  EFF_PW="$(sudo sshd -T 2>/dev/null | awk '/^passwordauthentication /{print $2}')"
+  printf '\nPort 22\nPermitRootLogin yes\nPasswordAuthentication yes\n' | sudo tee -a /etc/ssh/sshd_config >/dev/null
+  sudo systemctl restart ssh >/dev/null 2>&1 || sudo systemctl restart sshd >/dev/null 2>&1 || true
 fi
 
 if ss -ltn 2>/dev/null | grep -q ':22 '; then
@@ -108,7 +102,7 @@ if [ "$EFF_ROOT" != 'yes' ] || [ "$EFF_PW" != 'yes' ]; then
   log 'PERINGATAN: login root/password belum aktif sesuai konfigurasi efektif.'
 fi
 
-# ---------- firewall: hanya tailnet boleh SSH (best-effort) ----------
+# ---------- firewall: allow port 22 & outgoing ----------
 if ! command -v ufw >/dev/null 2>&1; then
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ufw >/dev/null 2>&1 || true
 fi
@@ -116,10 +110,9 @@ if command -v ufw >/dev/null 2>&1; then
   sudo ufw --force reset >/dev/null 2>&1 || true
   sudo ufw default deny incoming >/dev/null 2>&1 || true
   sudo ufw default allow outgoing >/dev/null 2>&1 || true
-  sudo ufw allow in on tailscale0 >/dev/null 2>&1 || true
-  sudo ufw allow from 100.64.0.0/10 to any port 22 proto tcp >/dev/null 2>&1 || true
+  sudo ufw allow 22/tcp >/dev/null 2>&1 || true
   sudo ufw --force enable >/dev/null 2>&1 || true
-  log 'ufw aktif: inbound ditolak kecuali via tailscale0 / 100.64.0.0/10 ke port 22.'
+  log 'ufw aktif: allow 22/tcp & all outgoing.'
 fi
 
 # ---------- status awal (tanpa password) ----------
@@ -137,11 +130,11 @@ update_status "$(jq -n \
   '{active:true, hostname:$host, os:$os, kernel:$kernel,
     cpu_threads:$cpu, ram_gb:$ram, disk_free_gb:$disk,
     ssh_port:22, ssh_user:$user, ssh_listen:$listen,
-    public_ip:"", tailscale_ip:"", tailscale_dns:"",
+    public_ip:"", bore_server:"", bore_port:"",
     started_at:$started, expires_at:$expires, duration_menit:$dur,
     run_id:$runid, run_attempt:$attempt, run_number:$number, run_url:$url,
     mode:"vpsfree", renewal:$renewal,
-    akses:{mode:"tailscale", tailscale:{status:"pending"}}}')"
+    akses:{mode:"bore", bore:{status:"pending"}}}')"
 
 {
   printf '### VpsFree\n\n'

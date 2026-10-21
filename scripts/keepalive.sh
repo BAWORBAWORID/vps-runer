@@ -57,17 +57,17 @@ while :; do
   rem=$(( (exp_epoch - now) / 60 )); [ "$rem" -lt 0 ] && rem=0
 
   systemctl is-active --quiet ssh 2>/dev/null || sudo systemctl start ssh 2>/dev/null || true
-  systemctl is-active --quiet tailscaled 2>/dev/null || sudo systemctl start tailscaled 2>/dev/null || true
+
+  if ! pgrep -f "bore local" >/dev/null 2>&1; then
+    log 'Bore tunnel terputus — merestart...'
+    nohup bore local 22 --to "${BORE_SERVER:-bore.pub}" ${BORE_PORT:+--port "$BORE_PORT"} ${BORE_SECRET:+--secret "$BORE_SECRET"} > /var/log/bore.log 2>&1 &
+  fi
 
   if [ $((i % 5)) -eq 0 ]; then
-    tsip="$(sudo tailscale ip -4 2>/dev/null | head -1 || true)"
     ssh_ok="$(ss -ltn 2>/dev/null | grep -c ':22 ' || true)"
-    log "detak #$i | sisa ${rem} menit | ssh=$ssh_ok | tailscale=$tsip"
-    if [ -z "$tsip" ] && [ -n "${TAILSCALE_AUTH_KEY:-}" ]; then
-      log 'Tailscale terputus — mencoba menyambung ulang...'
-      sudo tailscale up --authkey="$TAILSCALE_AUTH_KEY" \
-        --accept-dns=false --timeout=60s >/dev/null 2>&1 || true
-    fi
+    bore_ok="$(pgrep -fc 'bore local' || true)"
+    bport="$(grep -oE 'remote_port=[0-9]+' /var/log/bore.log 2>/dev/null | tail -1 | cut -d= -f2 || true)"
+    log "detak #$i | sisa ${rem} menit | ssh=$ssh_ok | bore=$bore_ok (port: ${bport:-?})"
   fi
 
   if [ $((i % 15)) -eq 0 ]; then

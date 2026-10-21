@@ -1,17 +1,14 @@
 FROM ubuntu:24.04
 
 LABEL maintainer="VpsFree"
-LABEL description="Containerized Ubuntu Server VPS with Tailscale & SSH"
+LABEL description="Containerized Ubuntu Server VPS with Bore & SSH"
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Pasang paket dasar dan repositori Tailscale resmi
+# Pasang paket dasar, OpenSSH server, dan bore tunnel
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
-    gnupg \
-    iptables \
-    iproute2 \
     sudo \
     openssh-server \
     jq \
@@ -20,14 +17,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     python3 \
     tzdata \
-    && curl -fsSL https://tailscale.com/install.sh | sh \
+    tar \
+    && curl -fsSL https://github.com/ekzhang/bore/releases/download/v0.5.1/bore-v0.5.1-x86_64-unknown-linux-musl.tar.gz | tar -xz -C /usr/local/bin \
+    && chmod +x /usr/local/bin/bore \
     && apt-get clean && rm -rf /var/lib/apt/lists/* \
-    && mkdir -p /var/run/sshd /var/run/tailscale /var/lib/tailscale /etc/ssh/sshd_config.d
+    && mkdir -p /var/run/sshd /etc/ssh/sshd_config.d
 
-# Konfigurasi SSH Server (root login + password auth)
-RUN echo "PermitRootLogin yes" > /etc/ssh/sshd_config.d/99-vpsfree.conf \
-    && echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config.d/99-vpsfree.conf \
-    && echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config.d/99-vpsfree.conf
+# Konfigurasi SSH Server (Port 22, root login, Pubkey + Password authentication)
+RUN printf "Port 22\nPermitRootLogin yes\nPasswordAuthentication yes\nPubkeyAuthentication yes\n" > /etc/ssh/sshd_config.d/99-vpsfree.conf
 
 # Salin entrypoint script
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

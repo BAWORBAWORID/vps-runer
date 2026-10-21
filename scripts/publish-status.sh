@@ -35,13 +35,13 @@ tmp="$(mktemp)"
 if [ "$IS_ACTIVE" -eq 0 ]; then
   jq --arg t "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '
     .active=false | .stopped_at=$t
-    | .public_ip="" | .tailscale_ip="" | .tailscale_dns=""
-    | (if .akses and .akses.tailscale then
-         .akses.tailscale.status="offline"
-         | .akses.tailscale.ip="" | .akses.tailscale.magicdns="" | .akses.tailscale.hostname=""
+    | .public_ip="" | .bore_server="" | .bore_port="" | .ssh_command=""
+    | (if .akses and .akses.bore then
+         .akses.bore.status="offline"
+         | .akses.bore.server="" | .akses.bore.port=""
        else . end)
   ' "$src" > "$tmp" 2>/dev/null && mv "$tmp" "$src" || rm -f "$tmp"
-  log 'status inactive: alamat SSH + Tailscale dibersihkan dari file publik'
+  log 'status inactive: alamat SSH + Bore dibersihkan dari file publik'
 fi
 
 if [ -z "$repo" ] || [ -z "${GITHUB_TOKEN:-}" ]; then
