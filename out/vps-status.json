@@ -1,0 +1,35 @@
+{
+  "active": false,
+  "hostname": "vpsfree-1",
+  "os": "Ubuntu 24.04.5 LTS",
+  "kernel": "6.17.0-1022-azure",
+  "cpu_threads": 4,
+  "ram_gb": 15.6,
+  "disk_free_gb": 86,
+  "ssh_port": 22,
+  "ssh_user": "vps",
+  "ssh_listen": "ok",
+  "public_ip": "",
+  "bore_server": "",
+  "bore_port": "",
+  "started_at": "2026-10-21T17:11:05Z",
+  "expires_at": "2026-10-21T22:53:05Z",
+  "duration_menit": 342,
+  "run_id": "39641362965",
+  "run_attempt": "1",
+  "run_number": "1",
+  "run_url": "https://github.com/BAWORBAWORID/vps-runer/actions/runs/39641362965",
+  "mode": "vpsfree",
+  "renewal": "ya",
+  "akses": {
+    "mode": "bore",
+    "bore": {
+      "status": "offline",
+      "note": "bore up gagal",
+      "server": "",
+      "port": ""
+    }
+  },
+  "stopped_at": "2026-10-21T17:12:04Z",
+  "ssh_command": ""
+}
