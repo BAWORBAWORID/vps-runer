@@ -101,7 +101,7 @@ CI menjalankan keduanya lewat `.github/workflows/validate-vps.yml` (dipicu saat 
 - Port 22 runner GitHub tidak punya inbound publik.
 - Jangan menaruh password/auth key di file, log, atau status. `.gitignore` sudah mengabaikan `*.env` dan `out/`.
 - **Gunakan repository private.** State sesi (home & konfigurasi SSH) disimpan di Release/artifact yang bisa dibaca siapa pun bila repo publik. Password tidak pernah ikut disimpan.
-- Runner GitHub-hosted bersifat **ephemeral** (VM baru per job) dan job dibatasi **6 jam**. Karena itu durasi dibatasi 342 menit + timeout job 360 menit.
+- Runner GitHub-hosted bersifat **ephemeral** (VM baru per job) dan job dibatasi **6 jam**. Karena itu durasi dibatasi 340 menit + timeout job 360 menit.
 - Batas penyimpanan artifact mengikuti plan GitHub (Free 500 MB / Pro 1 GB / Team 2 GB); asset Release maksimal 2 GB. Bila state terlalu besar, upload artifact bisa gagal (dilewati, job tetap lanjut) dan Release menjadi sumber utama.
 - Renewal bisa tertunda bila ada run lain di antrean (concurrency group `vpsfree-active-session`).
 - Tidak ada jaminan bebas suspend dari GitHub, kelangsungan port Bore publik.

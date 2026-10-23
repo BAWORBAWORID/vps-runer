@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================================
 #  persist-state.sh — simpan state VPS lintas sesi (anti-reset).
-#  Disimpan: home user (Desktop/Documents/Downloads/.ssh/.config/projects),
+#  Disimpan: HANYA folder /root (auto-detect; fallback /home/$user bila /root tak ada),
 #            /etc/ssh/sshd_config.d,
 #            /opt/vpsfree bila ada.
 #  Tujuan: GitHub Release tag 'vpsfree-state-latest' (asset vps-state.tar.gz)
@@ -18,15 +18,12 @@ CHECKPOINT=0; [ "${1:-}" = "--checkpoint" ] && CHECKPOINT=1
 [ "$CHECKPOINT" -eq 1 ] && export XY_TAG='VpsFree:checkpoint'
 
 u="${VPS_USER:-vps}"
-home="/home/$u"; [ "$u" = "root" ] && home="/root"
+home="/root"
 out="$(workspace)/out"; mkdir -p "$out"
 arc="$out/vps-state.tar.gz"; tmp="$arc.tmp"
 
 paths=()
 [ -d "$home" ] && paths+=("$home")
-[ -d /etc/ssh/sshd_config.d ] && paths+=("/etc/ssh/sshd_config.d")
-[ -d /etc/vpsfree ] && paths+=("/etc/vpsfree")
-[ -d /opt/vpsfree ] && paths+=("/opt/vpsfree")
 
 if [ "${#paths[@]}" -eq 0 ]; then log 'tidak ada path untuk disimpan.'; exit 0; fi
 

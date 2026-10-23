@@ -34,7 +34,7 @@ dispatch_next() {
     --arg user "${VPS_USER:-vps}" --arg runner "${RUNNER_IMAGE:-ubuntu-24.04}" \
     --arg renew "${PERPANJANG_OTOMATIS:-ya}" \
     '{ref:"master",inputs:{durasi_menit:$dur,hostname:$host,vps_user:$user,
-      runner:$runner,perpanjang_otomatis:$renew,renewal:"ya"}}')"
+      runner:$runner,perpanjang_otomatis:$renew}}')"
   curl -fsS -X POST \
     -H "Authorization: Bearer $GITHUB_TOKEN" \
     -H 'Accept: application/vnd.github+json' \

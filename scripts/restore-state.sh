@@ -13,7 +13,8 @@ export XY_TAG='VpsFree:restore'
 . "$(dirname "$0")/lib-common.sh"
 
 u="${VPS_USER:-vps}"
-home="/home/$u"; [ "$u" = "root" ] && home="/root"
+# auto-detect: /root dipakai bila ada di arsip atau user=root, selain itu /home/$u
+if [ "$u" = "root" ] || sudo test -d /root 2>/dev/null; then home="/root"; else home="/home/$u"; fi
 if [ -z "${GITHUB_TOKEN:-}" ] || [ -z "${GITHUB_REPOSITORY:-}" ]; then
   log 'GITHUB_TOKEN/repo tidak tersedia — lewati restore.'; exit 0
 fi

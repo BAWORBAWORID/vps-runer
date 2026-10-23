@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       durasi_menit:
-        description: 'Durasi sesi (menit, 10–342)'
+        description: 'Durasi sesi (menit, 100–340)'
         required: false
-        default: '342'
+        default: '340'
         type: string
       hostname:
         description: 'Prefix hostname sesi'
@@ -20,31 +20,25 @@ on:
         default: 'vps'
         type: string
       runner:
-        description: 'Image runner Ubuntu GitHub Actions'
+        description: 'OS (image runner GitHub Actions)'
         required: false
         default: 'ubuntu-24.04'
         type: choice
         options:
           - ubuntu-24.04
           - ubuntu-22.04
-          - ubuntu-latest
+          - ubuntu-20.04
+          - ubuntu-26.04
+          - debian-12
+          - debian-13
       perpanjang_otomatis:
-        description: 'Lanjutkan otomatis ke sesi berikutnya sebelum waktu habis (data & IP tetap)'
+        description: 'Lanjutkan otomatis ke sesi berikutnya sebelum waktu habis (data & port bore tetap)'
         required: false
         default: 'ya'
         type: choice
         options:
           - ya
           - tidak
-      renewal:
-        description: 'Internal: diisi otomatis saat estafet sesi'
-        required: false
-        default: 'tidak'
-        type: choice
-        options:
-          - tidak
-          - ya
-
 permissions:
   contents: write
   actions: write
@@ -56,15 +50,14 @@ concurrency:
 jobs:
   vps:
     name: Sesi VPS (${{ inputs.runner || 'ubuntu-24.04' }})
-    runs-on: ${{ inputs.runner || 'ubuntu-24.04' }}
+    runs-on: ${{ fromJSON('{"ubuntu-24.04":"ubuntu-24.04","ubuntu-22.04":"ubuntu-22.04","ubuntu-20.04":"ubuntu-20.04","ubuntu-26.04":"ubuntu-latest","debian-12":"debian-12","debian-13":"debian-13"}')[inputs.runner || 'ubuntu-24.04'] || 'ubuntu-24.04' }}
     timeout-minutes: 360
     env:
-      DUR: ${{ inputs.durasi_menit || '342' }}
+      DUR: ${{ inputs.durasi_menit || '340' }}
       VPS_HOST: ${{ inputs.hostname || 'vpsfree' }}
       VPS_USER: ${{ inputs.vps_user || 'vps' }}
       RUNNER_IMAGE: ${{ inputs.runner || 'ubuntu-24.04' }}
       PERPANJANG_OTOMATIS: ${{ inputs.perpanjang_otomatis || 'ya' }}
-      RENEWAL: ${{ inputs.renewal || 'tidak' }}
       VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
       BORE_PORT: ${{ secrets.BORE_PORT || '' }}
       BORE_SERVER: ${{ secrets.BORE_SERVER || 'bore.pub' }}
@@ -133,7 +126,7 @@ jobs:
             --arg dur "$DUR" --arg host "$VPS_HOST" --arg user "$VPS_USER" \
             --arg runner "$RUNNER_IMAGE" --arg renew "$PERPANJANG_OTOMATIS" \
             '{ref:"master",inputs:{durasi_menit:$dur,hostname:$host,vps_user:$user,
-              runner:$runner,perpanjang_otomatis:$renew,renewal:"ya"}}')"
+              runner:$runner,perpanjang_otomatis:$renew}}')"
           curl -fsS -X POST \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H 'Accept: application/vnd.github+json' \

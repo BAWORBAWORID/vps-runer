@@ -126,14 +126,13 @@ update_status "$(jq -n \
   --arg runid "${GITHUB_RUN_ID:-}" --arg attempt "${GITHUB_RUN_ATTEMPT:-}" \
   --arg number "${GITHUB_RUN_NUMBER:-}" \
   --arg url "https://github.com/${GITHUB_REPOSITORY:-}/actions/runs/${GITHUB_RUN_ID:-}" \
-  --arg renewal "${RENEWAL:-tidak}" \
   '{active:true, hostname:$host, os:$os, kernel:$kernel,
     cpu_threads:$cpu, ram_gb:$ram, disk_free_gb:$disk,
     ssh_port:22, ssh_user:$user, ssh_listen:$listen,
     public_ip:"", bore_server:"", bore_port:"",
     started_at:$started, expires_at:$expires, duration_menit:$dur,
     run_id:$runid, run_attempt:$attempt, run_number:$number, run_url:$url,
-    mode:"vpsfree", renewal:$renewal,
+    mode:"vpsfree",
     akses:{mode:"bore", bore:{status:"pending"}}}')"
 
 {
