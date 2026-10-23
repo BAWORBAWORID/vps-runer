@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-#  lib-common.sh — helper bersama VpsFree (Ubuntu Server + Tailscale SSH).
+#  lib-common.sh — helper bersama VpsFree (Ubuntu Server + SSH via Bore).
 #  Pakai dengan dot-source:
 #
 #      XY_TAG='VpsFree:akses'
@@ -24,7 +24,7 @@ status_path() { printf '%s/out/vps-status.json' "$(workspace)"; }
 
 ensure_workspace_dirs() { mkdir -p "$(workspace)/out"; }
 
-# Bangun/normalisasi hostname Tailscale dari input + nomor run.
+# Bangun/normalisasi hostname sesi dari input + nomor run.
 vps_hostname() {
   local base
   base="$(printf '%s' "${VPS_HOST:-vpsfree}" | tr -cd 'a-zA-Z0-9-' | tr 'A-Z' 'a-z')"

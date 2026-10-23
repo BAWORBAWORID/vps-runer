@@ -4,7 +4,7 @@
 #  Sumber (pilih terbaru):
 #    1) Release tag 'vpsfree-state-latest' (asset vps-state.tar.gz)
 #    2) Actions Artifact 'vpsfree-state' (fallback)
-#  Memulihkan: home user, /etc/ssh/sshd_config.d, /var/lib/tailscale (IP 100.x).
+#  Memulihkan: home user, /etc/ssh/sshd_config.d.
 #
 #  Env: GITHUB_TOKEN, GITHUB_REPOSITORY, VPS_USER.
 # ============================================================================
@@ -77,8 +77,6 @@ else
 fi
 
 if id -u "$u" >/dev/null 2>&1 && [ -d "$home" ]; then sudo chown -R "$u:$u" "$home" 2>/dev/null || true; fi
-sudo chown -R root:root /var/lib/tailscale 2>/dev/null || true
-sudo chmod 700 /var/lib/tailscale 2>/dev/null || true
 sudo chmod 755 /etc/ssh/sshd_config.d 2>/dev/null || true
 [ -d /etc/vpsfree ] && sudo chmod 755 /etc/vpsfree 2>/dev/null || true
 
@@ -92,5 +90,5 @@ if [ -f "$conf" ]; then
   sudo systemctl restart ssh >/dev/null 2>&1 || sudo systemctl restart sshd >/dev/null 2>&1 || true
 fi
 rm -rf "$work"
-log "restore selesai ke $home & /var/lib/tailscale."
+log "restore selesai ke $home."
 exit 0

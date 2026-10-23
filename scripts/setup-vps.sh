@@ -3,11 +3,11 @@
 #  setup-vps.sh — MODE DASAR VpsFree (Ubuntu Server).
 #   1) set password superuser/root dari secret VPS_PASSWORD
 #   2) buat user sudo (default: vps) dengan password yang sama
-#   3) aktifkan SSH password + root login (akses tetap lewat Tailscale)
+#   3) aktifkan SSH password + root login (akses lewat Bore tunnel)
 #   4) tulis identitas sesi ke out/vps-status.json (tanpa password)
 #
 #  Port 22 di VM GitHub-hosted tidak punya inbound publik; hanya ditembus
-#  lewat Tailscale. Script dijalankan sebagai user runner, pakai sudo.
+#  lewat Bore tunnel (bore.pub). Script dijalankan sebagai user runner, pakai sudo.
 # ============================================================================
 set -uo pipefail
 export XY_TAG='VpsFree:base'
@@ -143,5 +143,5 @@ update_status "$(jq -n \
     "$HOST_NAME" "$OS_NAME" "$KERNEL" "$VPS_USER" "$HOST_NAME" "$NOW" "$EXPIRES"
 } >> "${GITHUB_STEP_SUMMARY:-/dev/null}" 2>/dev/null || true
 
-log "SESI DASAR SIAP — user $VPS_USER, SSH port 22. Lanjut: setup Tailscale."
+log "SESI DASAR SIAP — user $VPS_USER, SSH port 22. Lanjut: setup Bore tunnel."
 exit 0

@@ -56,11 +56,11 @@ Status dan port aktif juga otomatis tercatat di branch `status` → `vps-status.
 - **Renewal Otomatis Antar Sesi:** Agar VPS bisa berjalan terus tanpa batas 6 jam, `keepalive.sh` otomatis men-dispatch sesi 6 jam berikutnya sebelum waktu habis (`perpanjang_otomatis=ya`).
 - **Konsistensi Port saat Renewal:** Port yang dialokasikan di sesi pertama disimpan ke `/etc/vpsfree/bore_port` dan dipulihkan saat renewal, sehingga Anda tetap menggunakan port yang sama (`ssh -p <port> root@bore.pub`) di setiap perpanjangan sesi tanpa perlu ganti port!
 
-> Saat state dipulihkan, nama node Tailscale dipertahankan (tidak diganti tiap renewal); nama `<prefix>-<nomor-run>` hanya dipakai pada sesi pertama.
+> Saat state dipulihkan, port Bore dipertahankan antar renewal.
 
 > **Menghentikan total:** cancel run yang sedang berjalan **dan** run antrean di tab Actions. Fallback estafet tidak akan men-dispatch ulang saat run di-cancel, tetapi sesi estafet yang sudah terjadwal tetap berjalan bila tidak di-cancel.
 
-> Catatan: runner GitHub-hosted adalah mesin ephemeral, jadi perpindahan sesi tidak bisa benar-benar 100% tanpa jeda. Implementasi meminimalkan downtime dan mempertahankan data + identitas Tailscale. Untuk nol-downtime sejati, pakai runner Ubuntu **self-hosted**.
+> Catatan: runner GitHub-hosted adalah mesin ephemeral, jadi perpindahan sesi tidak bisa benar-benar 100% tanpa jeda. Implementasi meminimalkan downtime dan mempertahankan data + port Bore. Untuk nol-downtime sejati, pakai runner Ubuntu **self-hosted**.
 
 ---
 
@@ -73,12 +73,12 @@ Status dan port aktif juga otomatis tercatat di branch `status` → `vps-status.
 scripts/
   lib-common.sh     # helper: logger, baca/tulis out/vps-status.json
   setup-vps.sh      # root/user sudo, SSH, firewall, status awal
-  setup-akses.sh    # Tailscale + pembatasan SSH ke tailnet
+  setup-akses.sh    # tunnel Bore (bore.pub) untuk SSH publik
   restore-state.sh  # pulihkan state sesi sebelumnya
   persist-state.sh  # simpan state (--checkpoint untuk berkala)
   publish-status.sh # publikasi status ke branch status
   keepalive.sh      # heartbeat, checkpoint, handover, auto-stop
-  finalize-vps.sh   # putuskan Tailscale sesi ini
+  finalize-vps.sh   # hentikan tunnel Bore sesi ini
   cleanup-actions.sh# hapus run lama
 ```
 
@@ -97,14 +97,14 @@ CI menjalankan keduanya lewat `.github/workflows/validate-vps.yml` (dipicu saat 
 
 ## 8. Keamanan, batasan, dan limit GitHub
 
-- SSH hanya lewat tailnet; ufw menolak inbound selain `tailscale0` / `100.64.0.0/10` ke port 22.
+- SSH hanya lewat Bore tunnel (bore.pub); port 22 runner GitHub tidak punya inbound publik langsung.
 - Port 22 runner GitHub tidak punya inbound publik.
 - Jangan menaruh password/auth key di file, log, atau status. `.gitignore` sudah mengabaikan `*.env` dan `out/`.
-- **Gunakan repository private.** State Tailscale (`/var/lib/tailscale`) berisi kunci node dan ikut disimpan agar IP tetap sama; Release/artifact bisa dibaca siapa pun bila repo publik. Password tidak pernah ikut disimpan.
+- **Gunakan repository private.** State sesi (home & konfigurasi SSH) disimpan di Release/artifact yang bisa dibaca siapa pun bila repo publik. Password tidak pernah ikut disimpan.
 - Runner GitHub-hosted bersifat **ephemeral** (VM baru per job) dan job dibatasi **6 jam**. Karena itu durasi dibatasi 342 menit + timeout job 360 menit.
 - Batas penyimpanan artifact mengikuti plan GitHub (Free 500 MB / Pro 1 GB / Team 2 GB); asset Release maksimal 2 GB. Bila state terlalu besar, upload artifact bisa gagal (dilewati, job tetap lanjut) dan Release menjadi sumber utama.
 - Renewal bisa tertunda bila ada run lain di antrean (concurrency group `vpsfree-active-session`).
-- Tidak ada jaminan bebas suspend dari GitHub, kelangsungan IP di luar tailnet, atau cakupan provider Tailscale.
+- Tidak ada jaminan bebas suspend dari GitHub, kelangsungan port Bore publik.
 - Gunakan auth key yang bisa dicabut bila perangkat hilang.
 
 ---

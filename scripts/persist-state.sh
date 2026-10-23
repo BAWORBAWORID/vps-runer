@@ -2,7 +2,7 @@
 # ============================================================================
 #  persist-state.sh — simpan state VPS lintas sesi (anti-reset).
 #  Disimpan: home user (Desktop/Documents/Downloads/.ssh/.config/projects),
-#            /etc/ssh/sshd_config.d, /var/lib/tailscale (IP 100.x tetap),
+#            /etc/ssh/sshd_config.d,
 #            /opt/vpsfree bila ada.
 #  Tujuan: GitHub Release tag 'vpsfree-state-latest' (asset vps-state.tar.gz)
 #          agar tahan terhadap cleanup-actions.sh.
@@ -26,7 +26,6 @@ paths=()
 [ -d "$home" ] && paths+=("$home")
 [ -d /etc/ssh/sshd_config.d ] && paths+=("/etc/ssh/sshd_config.d")
 [ -d /etc/vpsfree ] && paths+=("/etc/vpsfree")
-[ -d /var/lib/tailscale ] && paths+=("/var/lib/tailscale")
 [ -d /opt/vpsfree ] && paths+=("/opt/vpsfree")
 
 if [ "${#paths[@]}" -eq 0 ]; then log 'tidak ada path untuk disimpan.'; exit 0; fi

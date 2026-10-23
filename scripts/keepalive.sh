@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ============================================================================
 #  keepalive.sh — jaga VPS tetap hidup sampai batas waktu, lalu:
-#   * health-check sshd + tailscaled setiap menit
-#   * heartbeat tiap 5 menit (sisa waktu, IP tailscale, listener 22)
+#   * health-check sshd + bore setiap menit
+#   * heartbeat tiap 5 menit (sisa waktu, port bore, listener 22)
 #   * auto-checkpoint state tiap 15 menit
 #   * HANDOVER / RENEWAL: sebelum waktu habis (default 20 menit), simpan state
 #     lalu dispatch sesi berikutnya (vps-6h.yml) agar sesi baru sudah pulih
-#     sebelum sesi ini berakhir — data & identitas Tailscale ikut dipindahkan.
+#     sebelum sesi ini berakhir — data & port bore ikut dipertahankan.
 #   * AUTO-STOP: berhenti sendiri 3 menit sebelum expires_at.
 #
 #  Env: GITHUB_TOKEN, GITHUB_REPOSITORY, DUR, VPS_HOST, VPS_USER,
