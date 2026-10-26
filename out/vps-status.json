@@ -1,6 +1,6 @@
 {
-  "active": false,
-  "hostname": "vpsfree-25",
+  "active": true,
+  "hostname": "vpsfree-26",
   "os": "Ubuntu 24.04.5 LTS",
   "kernel": "6.17.0-1022-azure",
   "cpu_threads": 4,
@@ -12,26 +12,18 @@
   "public_ip": "",
   "bore_server": "",
   "bore_port": "",
-  "started_at": "2026-10-26T00:51:15Z",
-  "expires_at": "2026-10-26T06:31:15Z",
+  "started_at": "2026-10-26T06:29:08Z",
+  "expires_at": "2026-10-26T12:09:08Z",
   "duration_menit": 340,
-  "run_id": "40249857593",
+  "run_id": "40278279228",
   "run_attempt": "1",
-  "run_number": "25",
-  "run_url": "https://github.com/BAWORBAWORID/vps-runer/actions/runs/40249857593",
+  "run_number": "26",
+  "run_url": "https://github.com/BAWORBAWORID/vps-runer/actions/runs/40278279228",
   "mode": "vpsfree",
   "akses": {
     "mode": "bore",
     "bore": {
-      "status": "offline",
-      "server": "",
-      "port": ""
+      "status": "pending"
     }
-  },
-  "handover": {
-    "status": "dispatched",
-    "at": "2026-10-26T06:10:30Z"
-  },
-  "stopped_at": "2026-10-26T06:28:34Z",
-  "ssh_command": ""
+  }
 }
