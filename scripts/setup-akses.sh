@@ -100,10 +100,33 @@ if [ -n "${CLOUDFLARED_TOKEN:-}" ] && command -v cloudflared >/dev/null 2>&1; th
   sudo cloudflared service uninstall >/dev/null 2>&1 || true
   sudo pkill -f cloudflared 2>/dev/null || true
   sleep 1
-  if printf '%s' "$CLOUDFLARED_TOKEN" | sudo cloudflared service install /dev/stdin 2>&1; then
-    log 'cloudflared tunnel aktif.'
+
+  # Write token to file then install as systemd service
+  # Using direct systemd unit approach for reliability
+  printf '%s\n' "$CLOUDFLARED_TOKEN" | sudo tee /etc/cloudflared/token > /dev/null
+  sudo chmod 600 /etc/cloudflared/token
+
+  sudo tee /etc/systemd/system/cloudflared.service > /dev/null << 'SEOF'
+[Unit]
+Description=Cloudflare Tunnel
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/cloudflared --no-autoupdate tunnel run --token-file /etc/cloudflared/token
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+SEOF
+
+  sudo systemctl daemon-reload
+  sudo systemctl enable cloudflared
+  if sudo systemctl start cloudflared 2>&1; then
+    log 'cloudflared tunnel aktif (systemd).'
   else
-    log 'PERINGATAN: cloudflared service install gagal.'
+    log 'PERINGATAN: cloudflared service start gagal.'
   fi
 fi
 
