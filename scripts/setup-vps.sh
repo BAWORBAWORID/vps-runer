@@ -207,6 +207,37 @@ module.exports = {
 };
 EOF
 
+  # Create run.sh for easy restart
+  cat > /root/run.sh << 'RUNEOF'
+#!/bin/bash
+# Auto-start router Codex-Router via PM2
+# Usage: bash /root/run.sh
+
+cd /root/Codex-Router
+
+# Install deps if needed
+if [ -d node_modules ] && [ -f pnpm-lock.yaml ]; then
+  pnpm install --silent 2>/dev/null || true
+fi
+
+# Build if dist missing
+if [ ! -f apps/api/dist/index.js ] && [ -f pnpm-lock.yaml ]; then
+  pnpm build 2>/dev/null || true
+fi
+
+# Kill existing router
+pm2 delete router 2>/dev/null || true
+
+# Start with PM2
+pm2 start ecosystem.config.cjs
+pm2 save
+
+echo "Router started!"
+pm2 status
+RUNEOF
+  chmod +x /root/run.sh
+  log 'run.sh created at /root/run.sh.'
+
   # Start with PM2
   cd /root/Codex-Router
   pm2 start ecosystem.config.cjs 2>/dev/null || pm2 restart router 2>/dev/null || true
