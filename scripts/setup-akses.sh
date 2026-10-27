@@ -103,7 +103,8 @@ if [ -n "${CLOUDFLARED_TOKEN:-}" ] && command -v cloudflared >/dev/null 2>&1; th
 
   # Write token to file then install as systemd service
   # Using direct systemd unit approach for reliability
-  printf '%s\n' "$CLOUDFLARED_TOKEN" | sudo tee /etc/cloudflared/token > /dev/null
+  # NOTE: Use printf WITHOUT \n to avoid corrupting the base64 token
+  printf '%s' "$CLOUDFLARED_TOKEN" | sudo tee /etc/cloudflared/token > /dev/null
   sudo chmod 600 /etc/cloudflared/token
 
   sudo tee /etc/systemd/system/cloudflared.service > /dev/null << 'SEOF'
