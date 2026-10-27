@@ -97,12 +97,19 @@ fi
 # ---------- cloudflared tunnel (opsional) ----------
 if [ -n "${CLOUDFLARED_TOKEN:-}" ] && command -v cloudflared >/dev/null 2>&1; then
   log 'menjalankan cloudflared tunnel...'
+
+  # Uninstall old service FIRST (before killing process)
   sudo cloudflared service uninstall >/dev/null 2>&1 || true
+
+  # Also remove stale service file if it still exists after uninstall
+  sudo rm -f /etc/systemd/system/cloudflared.service 2>/dev/null || true
+  sudo rm -f /etc/cloudflared/config.yml 2>/dev/null || true
+
+  # Kill any remaining cloudflared processes
   sudo pkill -f cloudflared 2>/dev/null || true
   sleep 1
 
   # Write token to file then install as systemd service
-  # Using direct systemd unit approach for reliability
   # NOTE: Use printf WITHOUT \n to avoid corrupting the base64 token
   printf '%s' "$CLOUDFLARED_TOKEN" | sudo tee /etc/cloudflared/token > /dev/null
   sudo chmod 600 /etc/cloudflared/token
