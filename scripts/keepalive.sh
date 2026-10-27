@@ -77,16 +77,16 @@ while :; do
 
   if [ $((i % 15)) -eq 0 ]; then
     log 'auto-checkpoint 15 menit...'
-    "$hdir/persist-state.sh" --checkpoint || log 'checkpoint warning'
+    bash "${GITHUB_WORKSPACE:-.}/scripts/persist-state.sh" --checkpoint || log 'checkpoint warning'
   fi
 
   if [ "$handed" -eq 0 ] && [ "${PERPANJANG_OTOMATIS:-ya}" != 'tidak' ] && [ "$rem" -le "$lead" ]; then
     handed=1
     log "handover: menyimpan state lalu menjadwalkan sesi berikutnya (sisa ${rem} menit)..."
-    "$hdir/persist-state.sh" --checkpoint || true
+    bash "${GITHUB_WORKSPACE:-.}/scripts/persist-state.sh" --checkpoint || true
     if dispatch_next; then
       update_status "$(jq -n --arg t "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{handover:{status:"dispatched",at:$t}}')" || true
-      "$hdir/publish-status.sh" --active true >/dev/null 2>&1 || true
+      bash "${GITHUB_WORKSPACE:-.}/scripts/publish-status.sh" --active true >/dev/null 2>&1 || true
       touch /tmp/vps-handover-done 2>/dev/null || true
       log 'sesi berikutnya dijadwalkan (VPS lama tetap berjalan sampai batas waktu).'
     else
