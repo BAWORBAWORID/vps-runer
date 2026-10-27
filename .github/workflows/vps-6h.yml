@@ -59,8 +59,10 @@ jobs:
       RUNNER_IMAGE: ${{ inputs.runner || 'ubuntu-24.04' }}
       PERPANJANG_OTOMATIS: ${{ inputs.perpanjang_otomatis || 'ya' }}
       VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY || '' }}
       BORE_PORT: ${{ secrets.BORE_PORT || '' }}
       BORE_SERVER: ${{ secrets.BORE_SERVER || 'bore.pub' }}
+      CLOUDFLARED_TOKEN: ${{ secrets.CLOUDFLARED_TOKEN || '' }}
       CLEANUP_TOKEN: ${{ secrets.CLEANUP_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

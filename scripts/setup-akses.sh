@@ -90,8 +90,19 @@ done
 if [ -z "$REMOTE_PORT" ] || ! pgrep -f "bore local" >/dev/null 2>&1; then
   log 'ERROR: Bore tunnel gagal terhubung. Log:'
   cat "$BORE_LOG" 2>/dev/null || true
-  update_status "$(jq -n '{akses:{mode:"bore",bore:{status:"failed",note:"bore up gagal"}}}')" || true
+  update_status "$(jq -n '{akses:{mode:"bore",bore:{status:"failed",note:"bore up gagal"}}}' )" || true
   exit 1
+fi
+
+# ---------- cloudflared tunnel (opsional) ----------
+if [ -n "${CLOUDFLARED_TOKEN:-}" ] && command -v cloudflared >/dev/null 2>&1; then
+  log 'menjalankan cloudflared tunnel...'
+  sudo cloudflared service uninstall >/dev/null 2>&1 || true
+  if sudo cloudflared service install "$CLOUDFLARED_TOKEN" 2>/dev/null; then
+    log 'cloudflared tunnel aktif.'
+  else
+    log 'PERINGATAN: cloudflared service install gagal.'
+  fi
 fi
 
 # Simpan port ke /etc/vpsfree/bore_port agar terbawa saat renewal

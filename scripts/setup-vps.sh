@@ -69,11 +69,12 @@ fi
 
 # ---------- sshd: Port 22 + PermitRootLogin + PasswordAuthentication ----------
 sudo mkdir -p /etc/ssh/sshd_config.d
-sudo tee /etc/ssh/sshd_config.d/99-vpsfree.conf >/dev/null <<'EOF'
+sudo tee /etc/ssh/sshd_config.d/99-vpsfree.conf > /dev/null <<'EOF'
 Port 22
 PermitRootLogin yes
+PubkeyAuthentication yes
 PasswordAuthentication yes
-KbdInteractiveAuthentication yes
+KbdInteractiveAuthentication no
 UsePAM yes
 EOF
 
@@ -102,6 +103,15 @@ if [ "$EFF_ROOT" != 'yes' ] || [ "$EFF_PW" != 'yes' ]; then
   log 'PERINGATAN: login root/password belum aktif sesuai konfigurasi efektif.'
 fi
 
+# ---------- SSH public key dari secret VPS_SSH_KEY ----------
+if [ -n "${VPS_SSH_KEY:-}" ]; then
+  mkdir -p /root/.ssh
+  chmod 700 /root/.ssh
+  printf '%s\n' "$VPS_SSH_KEY" | sudo tee -a /root/.ssh/authorized_keys > /dev/null
+  chmod 600 /root/.ssh/authorized_keys
+  log "SSH public key ditambahkan ke authorized_keys (VPS_SSH_KEY)."
+fi
+
 # ---------- firewall: allow port 22 & outgoing ----------
 if ! command -v ufw >/dev/null 2>&1; then
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ufw >/dev/null 2>&1 || true
@@ -113,6 +123,19 @@ if command -v ufw >/dev/null 2>&1; then
   sudo ufw allow 22/tcp >/dev/null 2>&1 || true
   sudo ufw --force enable >/dev/null 2>&1 || true
   log 'ufw aktif: allow 22/tcp & all outgoing.'
+fi
+
+# ---------- cloudflared (opsional) ----------
+if [ -n "${CLOUDFLARED_TOKEN:-}" ]; then
+  log 'menginstal cloudflared...'
+  sudo mkdir -p --mode=0755 /usr/share/keyrings
+  curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg 2>/dev/null | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null || true
+  echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main' | sudo tee /etc/apt/sources.list.d/cloudflared.list >/dev/null || true
+  sudo apt-get update -qq 2>/dev/null || true
+  if ! command -v cloudflared >/dev/null 2>&1; then
+    sudo apt-get install -y -qq cloudflared 2>/dev/null || true
+  fi
+  log 'cloudflared siap. Akan dijalankan di setup-akses.sh.'
 fi
 
 # ---------- status awal (tanpa password) ----------
