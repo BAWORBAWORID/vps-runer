@@ -207,33 +207,109 @@ module.exports = {
 };
 EOF
 
-  # Create run.sh for easy restart
+  # Create run.sh for easy restart (router + cloudflared tunnel)
   cat > /root/run.sh << 'RUNEOF'
 #!/bin/bash
-# Auto-start router Codex-Router via PM2
+# Auto-start Codex-Router + Cloudflared Tunnel via PM2
 # Usage: bash /root/run.sh
 
-cd /root/Codex-Router
+CLOUDFLARED_TOKEN="${CLOUDFLARED_TOKEN:-}"
+ROUTER_DIR="/root/Codex-Router"
+SROUTER_DB="/root/.srouter/srouter.db"
+
+echo "=== Auto-Start Codex-Router ==="
+
+# --- Router ---
+cd "$ROUTER_DIR"
 
 # Install deps if needed
 if [ -d node_modules ] && [ -f pnpm-lock.yaml ]; then
-  pnpm install --silent 2>/dev/null || true
+  echo "[1/4] Installing dependencies..."
+  pnpm install --silent 2>/dev/null || pnpm install
 fi
 
 # Build if dist missing
 if [ ! -f apps/api/dist/index.js ] && [ -f pnpm-lock.yaml ]; then
-  pnpm build 2>/dev/null || true
+  echo "[2/4] Building router..."
+  pnpm build
 fi
 
 # Kill existing router
 pm2 delete router 2>/dev/null || true
 
 # Start with PM2
+echo "[3/4] Starting router via PM2..."
 pm2 start ecosystem.config.cjs
 pm2 save
 
-echo "Router started!"
+echo ""
+echo "=== Router Status ==="
 pm2 status
+
+# --- Cloudflared Tunnel ---
+if [ -n "$CLOUDFLARED_TOKEN" ] && command -v cloudflared >/dev/null 2>&1; then
+  echo ""
+  echo "=== Auto-Start Cloudflared Tunnel ==="
+
+  # Uninstall existing service first
+  echo "[1/3] Uninstalling old cloudflared service..."
+  cloudflared service uninstall 2>/dev/null || true
+  sudo cloudflared service uninstall 2>/dev/null || true
+
+  # Remove stale files
+  sudo rm -f /etc/systemd/system/cloudflared.service 2>/dev/null || true
+  sudo rm -f /etc/cloudflared/config.yml 2>/dev/null || true
+  sudo rm -f /etc/cloudflared/token 2>/dev/null || true
+
+  # Kill existing processes
+  sudo pkill -f cloudflared 2>/dev/null || true
+  pkill -f cloudflared 2>/dev/null || true
+  sleep 1
+
+  # Write token
+  echo "[2/3] Writing cloudflared token..."
+  printf '%s' "$CLOUDFLARED_TOKEN" | sudo tee /etc/cloudflared/token > /dev/null
+  sudo chmod 600 /etc/cloudflared/token
+
+  # Create systemd service
+  echo "[3/3] Installing cloudflared service..."
+  sudo tee /etc/systemd/system/cloudflared.service > /dev/null << 'SEOF'
+[Unit]
+Description=Cloudflare Tunnel
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/cloudflared --no-autoupdate tunnel run --token-file /etc/cloudflared/token
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+SEOF
+
+  sudo systemctl daemon-reload
+  sudo systemctl enable cloudflared
+  sudo systemctl start cloudflared
+
+  echo ""
+  echo "=== Cloudflared Status ==="
+  sudo systemctl status cloudflared --no-pager | head -8
+  echo ""
+  echo "=== Tunnel Info ==="
+  cloudflared tunnel list 2>/dev/null || echo "Tunnel list unavailable"
+else
+  if [ -z "$CLOUDFLARED_TOKEN" ]; then
+    echo ""
+    echo "⚠️  CLOUDFLARED_TOKEN not set in env — skipping cloudflared setup."
+  else
+    echo ""
+    echo "⚠️  cloudflared binary not found — skipping cloudflared setup."
+  fi
+fi
+
+echo ""
+echo "=== DONE ==="
 RUNEOF
   chmod +x /root/run.sh
   log 'run.sh created at /root/run.sh.'
