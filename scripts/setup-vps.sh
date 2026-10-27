@@ -115,9 +115,6 @@ if [ -n "${VPS_SSH_KEY:-}" ]; then
 fi
 
 # ---------- firewall: allow port 22 & outgoing ----------
-if ! command -v ufw >/dev/null 2>&1; then
-  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ufw >/dev/null 2>&1 || true
-fi
 if command -v ufw >/dev/null 2>&1; then
   sudo ufw --force reset >/dev/null 2>&1 || true
   sudo ufw default deny incoming >/dev/null 2>&1 || true
@@ -137,13 +134,25 @@ fi
 NODE_VER="$(node -v 2>/dev/null || echo 'none')"
 log "Node.js: $NODE_VER"
 
-# ---------- npm + pnpm ----------
+# ---------- pnpm + yarn + n (Node version manager) ----------
 if ! command -v pnpm >/dev/null 2>&1; then
   log 'menginstal pnpm...'
   npm install -g pnpm 2>/dev/null || curl -fsSL https://get.pnpm.io/install.sh | sudo bash - 2>/dev/null || true
 fi
 PNPM_VER="$(pnpm -v 2>/dev/null || echo 'none')"
 log "pnpm: $PNPM_VER"
+
+if ! command -v yarn >/dev/null 2>&1; then
+  log 'menginstal yarn...'
+  npm install -g yarn 2>/dev/null || true
+fi
+YARN_VER="$(yarn -v 2>/dev/null || echo 'none')"
+log "yarn: $YARN_VER"
+
+if ! command -v n >/dev/null 2>&1; then
+  log 'menginstal n (Node version manager)...'
+  npm install -g n 2>/dev/null || true
+fi
 
 # ---------- PM2 global ----------
 if ! command -v pm2 >/dev/null 2>&1; then
@@ -153,7 +162,7 @@ fi
 PM2_VER="$(pm2 -v 2>/dev/null | head -1 || echo 'none')"
 log "pm2: $PM2_VER"
 
-# ---------- git + rsync ----------
+# ---------- git (PPA latest) ----------
 if ! command -v git >/dev/null 2>&1 || ! command -v rsync >/dev/null 2>&1; then
   log 'menginstal git & rsync...'
   sudo apt-get update -qq
@@ -161,6 +170,12 @@ if ! command -v git >/dev/null 2>&1 || ! command -v rsync >/dev/null 2>&1; then
 fi
 GIT_VER="$(git --version 2>/dev/null | awk '{print $3}' || echo 'none')"
 log "git: $GIT_VER | rsync: $(command -v rsync >/dev/null 2>&1 && echo 'ok' || echo 'missing')"
+
+# ---------- ufw ----------
+if ! command -v ufw >/dev/null 2>&1; then
+  log 'menginstal ufw...'
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ufw 2>/dev/null || true
+fi
 
 # ---------- auto-start router dari state yang direstore ----------
 if [ -d "/root/Codex-Router" ] && [ -f "/root/Codex-Router/package.json" ]; then
