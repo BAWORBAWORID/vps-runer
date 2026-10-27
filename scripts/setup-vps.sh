@@ -45,9 +45,11 @@ DISK_FREE_GB="$(df -BG --output=avail / 2>/dev/null | tail -1 | tr -dc '0-9')"; 
 
 log "mode dasar | hostname $HOST_NAME | durasi $DUR menit | user $VPS_USER | OS $OS_NAME ($KERNEL)"
 
-# ---------- paket dasar (curl, wget, jq) ----------
+# ---------- paket dasar (curl, wget, jq, git, rsync) ----------
 if ! command -v jq >/dev/null 2>&1 || ! command -v curl >/dev/null 2>&1; then
-  sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq jq curl wget
+  sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq jq curl wget git rsync
+elif ! command -v git >/dev/null 2>&1 || ! command -v rsync >/dev/null 2>&1; then
+  sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git rsync
 fi
 sudo systemctl enable --now ssh >/dev/null 2>&1 || sudo systemctl enable --now sshd >/dev/null 2>&1 || true
 
@@ -126,7 +128,8 @@ if command -v ufw >/dev/null 2>&1; then
 fi
 
 # ---------- Node.js v22 ----------
-if ! command -v node >/dev/null 2>&1 || [ "$(node -v 2>/dev/null | cut -d. -f1 | tr -dc '0-9')" -lt 22 ]; then
+NODE_CURRENT="$(node -v 2>/dev/null | tr -dc '0-9' || echo '0')"
+if [ "$NODE_CURRENT" -lt 22 ]; then
   log 'menginstal Node.js v22...'
   curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash - 2>/dev/null || true
   sudo apt-get install -y -qq nodejs 2>/dev/null || true
@@ -134,13 +137,30 @@ fi
 NODE_VER="$(node -v 2>/dev/null || echo 'none')"
 log "Node.js: $NODE_VER"
 
-# ---------- pnpm ----------
+# ---------- npm + pnpm ----------
 if ! command -v pnpm >/dev/null 2>&1; then
   log 'menginstal pnpm...'
   npm install -g pnpm 2>/dev/null || curl -fsSL https://get.pnpm.io/install.sh | sudo bash - 2>/dev/null || true
 fi
 PNPM_VER="$(pnpm -v 2>/dev/null || echo 'none')"
 log "pnpm: $PNPM_VER"
+
+# ---------- PM2 global ----------
+if ! command -v pm2 >/dev/null 2>&1; then
+  log 'menginstal pm2...'
+  npm install -g pm2 2>/dev/null || true
+fi
+PM2_VER="$(pm2 -v 2>/dev/null | head -1 || echo 'none')"
+log "pm2: $PM2_VER"
+
+# ---------- git + rsync ----------
+if ! command -v git >/dev/null 2>&1 || ! command -v rsync >/dev/null 2>&1; then
+  log 'menginstal git & rsync...'
+  sudo apt-get update -qq
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git rsync 2>/dev/null || true
+fi
+GIT_VER="$(git --version 2>/dev/null | awk '{print $3}' || echo 'none')"
+log "git: $GIT_VER | rsync: $(command -v rsync >/dev/null 2>&1 && echo 'ok' || echo 'missing')"
 
 # ---------- auto-start router dari state yang direstore ----------
 if [ -d "/root/Codex-Router" ] && [ -f "/root/Codex-Router/package.json" ]; then
