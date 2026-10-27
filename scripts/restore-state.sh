@@ -81,6 +81,15 @@ if id -u "$u" >/dev/null 2>&1 && [ -d "$home" ]; then sudo chown -R "$u:$u" "$ho
 sudo chmod 755 /etc/ssh/sshd_config.d 2>/dev/null || true
 [ -d /etc/vpsfree ] && sudo chmod 755 /etc/vpsfree 2>/dev/null || true
 
+# ---------- restart PM2 processes ----------
+if [ -d "$home/.pm2" ] || [ -d "/root/.pm2" ]; then
+  log 'memulai ulang layanan PM2...'
+  sudo pm2 kill 2>/dev/null || true
+  pm2 start /root/Codex-Router/ecosystem.config.cjs 2>/dev/null || true
+  pm2 save 2>/dev/null || true
+  log 'PM2 restarted.'
+fi
+
 # Drop-in sshd dari arsip bisa berbeda dari yang divalidasi setup-vps: validasi ulang.
 conf=/etc/ssh/sshd_config.d/99-vpsfree.conf
 if [ -f "$conf" ]; then

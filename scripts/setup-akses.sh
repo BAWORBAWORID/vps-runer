@@ -98,7 +98,9 @@ fi
 if [ -n "${CLOUDFLARED_TOKEN:-}" ] && command -v cloudflared >/dev/null 2>&1; then
   log 'menjalankan cloudflared tunnel...'
   sudo cloudflared service uninstall >/dev/null 2>&1 || true
-  if sudo cloudflared service install "$CLOUDFLARED_TOKEN" 2>/dev/null; then
+  sudo pkill -f cloudflared 2>/dev/null || true
+  sleep 1
+  if printf '%s' "$CLOUDFLARED_TOKEN" | sudo cloudflared service install /dev/stdin 2>&1; then
     log 'cloudflared tunnel aktif.'
   else
     log 'PERINGATAN: cloudflared service install gagal.'

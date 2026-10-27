@@ -45,9 +45,9 @@ DISK_FREE_GB="$(df -BG --output=avail / 2>/dev/null | tail -1 | tr -dc '0-9')"; 
 
 log "mode dasar | hostname $HOST_NAME | durasi $DUR menit | user $VPS_USER | OS $OS_NAME ($KERNEL)"
 
-# ---------- paket dasar ----------
+# ---------- paket dasar (curl, wget, jq) ----------
 if ! command -v jq >/dev/null 2>&1 || ! command -v curl >/dev/null 2>&1; then
-  sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq jq curl
+  sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq jq curl wget
 fi
 sudo systemctl enable --now ssh >/dev/null 2>&1 || sudo systemctl enable --now sshd >/dev/null 2>&1 || true
 
@@ -123,6 +123,60 @@ if command -v ufw >/dev/null 2>&1; then
   sudo ufw allow 22/tcp >/dev/null 2>&1 || true
   sudo ufw --force enable >/dev/null 2>&1 || true
   log 'ufw aktif: allow 22/tcp & all outgoing.'
+fi
+
+# ---------- Node.js v22 ----------
+if ! command -v node >/dev/null 2>&1 || [ "$(node -v 2>/dev/null | cut -d. -f1 | tr -dc '0-9')" -lt 22 ]; then
+  log 'menginstal Node.js v22...'
+  curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash - 2>/dev/null || true
+  sudo apt-get install -y -qq nodejs 2>/dev/null || true
+fi
+NODE_VER="$(node -v 2>/dev/null || echo 'none')"
+log "Node.js: $NODE_VER"
+
+# ---------- pnpm ----------
+if ! command -v pnpm >/dev/null 2>&1; then
+  log 'menginstal pnpm...'
+  npm install -g pnpm 2>/dev/null || curl -fsSL https://get.pnpm.io/install.sh | sudo bash - 2>/dev/null || true
+fi
+PNPM_VER="$(pnpm -v 2>/dev/null || echo 'none')"
+log "pnpm: $PNPM_VER"
+
+# ---------- auto-start router dari state yang direstore ----------
+if [ -d "/root/Codex-Router" ] && [ -f "/root/Codex-Router/package.json" ]; then
+  log 'router Codex-Router terdeteksi di /root — setup auto-start...'
+
+  # Install dependencies
+  if [ -f "/root/Codex-Router/pnpm-lock.yaml" ]; then
+    cd /root/Codex-Router
+    pnpm install --silent 2>/dev/null || true
+    pnpm build 2>/dev/null || true
+    log 'router build selesai.'
+  fi
+
+  # Create ecosystem config for PM2
+  cat > /root/Codex-Router/ecosystem.config.cjs << 'EOF'
+module.exports = {
+  apps: [{
+    name: 'router',
+    script: 'apps/api/dist/index.js',
+    cwd: '/root/Codex-Router',
+    instances: 1,
+    exec_mode: 'fork',
+    env: {
+      PORT: 4000,
+      DATABASE_PATH: '/root/.srouter/srouter.db',
+      NODE_ENV: 'production',
+    },
+  }],
+};
+EOF
+
+  # Start with PM2
+  cd /root/Codex-Router
+  pm2 start ecosystem.config.cjs 2>/dev/null || pm2 restart router 2>/dev/null || true
+  pm2 save 2>/dev/null || true
+  log 'router PM2 started.'
 fi
 
 # ---------- cloudflared (opsional) ----------

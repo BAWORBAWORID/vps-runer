@@ -28,7 +28,8 @@ paths=()
 if [ "${#paths[@]}" -eq 0 ]; then log 'tidak ada path untuk disimpan.'; exit 0; fi
 
 excludes=(
-  --exclude='*/cache/*' --exclude='*/.cache/*' --exclude='*/node_modules/*'
+  --exclude='*/cache/*' --exclude='*/.cache/*'
+  --exclude='*/node_modules/*'
   --exclude='*/.npm/_cacache/*' --exclude='*/.local/share/Trash/*'
   --exclude='*.iso' --exclude='*.img' --exclude='*.vmdk' --exclude='*.tmp'
   --exclude='*/snap/*' --exclude='*/go/pkg/mod/*' --exclude='*/.cargo/registry/*'
