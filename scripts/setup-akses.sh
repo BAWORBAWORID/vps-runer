@@ -115,10 +115,10 @@ PUBLIC_IP="$(curl -fsS --connect-timeout 8 --max-time 15 https://api.ipify.org 2
 
 update_status "$(jq -n \
   --arg bserver "$BORE_SERVER" --arg bport "$REMOTE_PORT" --arg ssh_cmd "$SSH_CMD" --arg pub "$PUBLIC_IP" \
+  --arg note "Akses SSH via Bore tunnel: $SSH_CMD" \
   '{public_ip:$pub, bore_server:$bserver, bore_port:$bport, ssh_command:$ssh_cmd,
     akses:{mode:"bore", bore:{status:"ok", server:$bserver, port:$bport,
-      command_root:$ssh_cmd,
-      note:"Akses SSH via Bore tunnel: " + $ssh_cmd}}}')"
+      command_root:$ssh_cmd, note:$note}}}' 2>&1)"
 
 log "=========================================================="
 log "BORE TUNNEL AKTIF!"
