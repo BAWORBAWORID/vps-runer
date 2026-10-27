@@ -107,10 +107,10 @@ fi
 
 # ---------- SSH public key dari secret VPS_SSH_KEY ----------
 if [ -n "${VPS_SSH_KEY:-}" ]; then
-  mkdir -p /root/.ssh
-  chmod 700 /root/.ssh
+  sudo mkdir -p /root/.ssh
+  sudo chmod 700 /root/.ssh
   printf '%s\n' "$VPS_SSH_KEY" | sudo tee -a /root/.ssh/authorized_keys > /dev/null
-  chmod 600 /root/.ssh/authorized_keys
+  sudo chmod 600 /root/.ssh/authorized_keys
   log "SSH public key ditambahkan ke authorized_keys (VPS_SSH_KEY)."
 fi
 
