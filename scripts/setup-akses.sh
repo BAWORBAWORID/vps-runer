@@ -109,8 +109,9 @@ if [ -n "${CLOUDFLARED_TOKEN:-}" ] && command -v cloudflared >/dev/null 2>&1; th
   sudo pkill -f cloudflared 2>/dev/null || true
   sleep 1
 
-  # Write token to file then install as systemd service
+  # Create /etc/cloudflared dir and write token
   # NOTE: Use printf WITHOUT \n to avoid corrupting the base64 token
+  sudo mkdir -p /etc/cloudflared
   printf '%s' "$CLOUDFLARED_TOKEN" | sudo tee /etc/cloudflared/token > /dev/null
   sudo chmod 600 /etc/cloudflared/token
 
