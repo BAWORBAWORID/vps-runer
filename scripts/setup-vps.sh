@@ -20,6 +20,14 @@ case "$VPS_PASSWORD" in
   *$'\n'*|*$'\r'*) log 'ERROR: VPS_PASSWORD tidak boleh mengandung baris baru.'; exit 1;;
 esac
 
+# ---------- fix PATH ----------
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+if [ -f /etc/environment ] && ! grep -q '/usr/local/bin' /etc/environment 2>/dev/null; then
+  # Backup and update /etc/environment for PATH persistence
+  sudo cp /etc/environment /etc/environment.bak 2>/dev/null || true
+  printf '%s\n' 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' | sudo tee /etc/environment >/dev/null 2>&1 || true
+fi
+
 # ---------- durasi (menit) ----------
 DUR="${DUR:-360}"; DUR="${DUR//[^0-9]/}"; [ -z "$DUR" ] && DUR=342
 [ "$DUR" -lt 10 ] && DUR=342
@@ -212,6 +220,9 @@ EOF
 #!/bin/bash
 # Auto-start Codex-Router + Cloudflared Tunnel via PM2
 # Usage: bash /root/run.sh
+
+# Fix PATH
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 CLOUDFLARED_TOKEN="${CLOUDFLARED_TOKEN:-}"
 ROUTER_DIR="/root/Codex-Router"
