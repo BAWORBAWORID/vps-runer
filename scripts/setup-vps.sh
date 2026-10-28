@@ -276,7 +276,8 @@ if [ -n "$CLOUDFLARED_TOKEN" ] && command -v cloudflared >/dev/null 2>&1; then
 
   # Install and start cloudflared tunnel directly
   echo "[2/3] Installing cloudflared service..."
-  printf '%s' "$CLOUDFLARED_TOKEN" | sudo cloudflared service install /dev/stdin 2>&1
+  # Strip any trailing \r from env var (GitHub Actions may inject it)
+  echo "${CLOUDFLARED_TOKEN}" | tr -d '\r' | sudo cloudflared service install /dev/stdin 2>&1
 
   echo ""
   echo "=== Cloudflared Status ==="

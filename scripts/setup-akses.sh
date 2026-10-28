@@ -103,8 +103,9 @@ if [ -n "${CLOUDFLARED_TOKEN:-}" ] && command -v cloudflared >/dev/null 2>&1; th
   sudo pkill -f cloudflared 2>/dev/null || true
   sleep 1
 
-  # Install and start directly — cloudflared handles token file + service
-  if printf '%s' "$CLOUDFLARED_TOKEN" | sudo cloudflared service install /dev/stdin 2>&1; then
+  # Strip any trailing whitespace/CR from env var, then pipe to cloudflared
+  # This fixes "illegal base64" error caused by GitHub Actions env injection
+  if echo "${CLOUDFLARED_TOKEN}" | tr -d '\r' | sudo cloudflared service install /dev/stdin 2>&1; then
     log 'cloudflared tunnel aktif (systemd).'
   else
     log 'PERINGATAN: cloudflared service install gagal.'
