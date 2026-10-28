@@ -3,7 +3,7 @@
 #  keepalive.sh — jaga VPS tetap hidup sampai batas waktu, lalu:
 #   * health-check sshd + bore setiap menit
 #   * heartbeat tiap 5 menit (sisa waktu, port bore, listener 22)
-#   * auto-checkpoint state tiap 15 menit
+#   * auto-checkpoint 30 menit sebelum expired (batch dengan handover)
 #   * HANDOVER / RENEWAL: sebelum waktu habis (default 20 menit), simpan state
 #     lalu dispatch sesi berikutnya (vps-6h.yml) agar sesi baru sudah pulih
 #     sebelum sesi ini berakhir — data & port bore ikut dipertahankan.
@@ -24,7 +24,7 @@ exp_epoch="$(date -u -d "$exp" +%s 2>/dev/null || echo 0)"
 if [ "$exp_epoch" -le 0 ]; then exp_epoch=$(( $(date -u +%s) + 335*60 )); fi
 lead="${HANDOVER_LEAD_MIN:-20}"
 
-log "sesi aktif sampai $exp UTC (auto-checkpoint 15m, handover ${lead}m sebelum habis)"
+log "sesi aktif sampai $exp UTC (auto-backup saat handover, ${lead}m sebelum habis)"
 
 dispatch_next() {
   [ -n "${GITHUB_TOKEN:-}" ] && [ -n "${GITHUB_REPOSITORY:-}" ] || return 1
@@ -73,11 +73,6 @@ while :; do
     bore_ok="$(pgrep -fc 'bore local' || true)"
     bport="$(sed 's/\x1b\[[0-9;]*m//g' /tmp/bore.log 2>/dev/null | grep -oE 'remote_port=[0-9]+' | tail -1 | cut -d= -f2 || true)"
     log "detak #$i | sisa ${rem} menit | ssh=$ssh_ok | bore=$bore_ok (port: ${bport:-?})"
-  fi
-
-  if [ $((i % 15)) -eq 0 ]; then
-    log 'auto-checkpoint 15 menit...'
-    bash "${GITHUB_WORKSPACE:-.}/scripts/persist-state.sh" --checkpoint || log 'checkpoint warning'
   fi
 
   if [ "$handed" -eq 0 ] && [ "${PERPANJANG_OTOMATIS:-ya}" != 'tidak' ] && [ "$rem" -le "$lead" ]; then
