@@ -98,44 +98,16 @@ fi
 if [ -n "${CLOUDFLARED_TOKEN:-}" ] && command -v cloudflared >/dev/null 2>&1; then
   log 'menjalankan cloudflared tunnel...'
 
-  # Uninstall old service FIRST (before killing process)
+  # Uninstall old service + kill processes
   sudo cloudflared service uninstall >/dev/null 2>&1 || true
-
-  # Also remove stale service file if it still exists after uninstall
-  sudo rm -f /etc/systemd/system/cloudflared.service 2>/dev/null || true
-  sudo rm -f /etc/cloudflared/config.yml 2>/dev/null || true
-
-  # Kill any remaining cloudflared processes
   sudo pkill -f cloudflared 2>/dev/null || true
   sleep 1
 
-  # Create /etc/cloudflared dir and write token
-  # NOTE: Use printf WITHOUT \n to avoid corrupting the base64 token
-  sudo mkdir -p /etc/cloudflared
-  printf '%s' "$CLOUDFLARED_TOKEN" | sudo tee /etc/cloudflared/token > /dev/null
-  sudo chmod 600 /etc/cloudflared/token
-
-  sudo tee /etc/systemd/system/cloudflared.service > /dev/null << 'SEOF'
-[Unit]
-Description=Cloudflare Tunnel
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/usr/local/bin/cloudflared --no-autoupdate tunnel run --token-file /etc/cloudflared/token
-Restart=on-failure
-RestartSec=5s
-
-[Install]
-WantedBy=multi-user.target
-SEOF
-
-  sudo systemctl daemon-reload
-  sudo systemctl enable cloudflared
-  if sudo systemctl start cloudflared 2>&1; then
+  # Install and start directly — cloudflared handles token file + service
+  if printf '%s' "$CLOUDFLARED_TOKEN" | sudo cloudflared service install /dev/stdin 2>&1; then
     log 'cloudflared tunnel aktif (systemd).'
   else
-    log 'PERINGATAN: cloudflared service start gagal.'
+    log 'PERINGATAN: cloudflared service install gagal.'
   fi
 fi
 
