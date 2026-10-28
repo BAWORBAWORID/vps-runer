@@ -21,12 +21,16 @@ case "$VPS_PASSWORD" in
 esac
 
 # ---------- fix PATH ----------
-export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-if [ -f /etc/environment ] && ! grep -q '/usr/local/bin' /etc/environment 2>/dev/null; then
-  # Backup and update /etc/environment for PATH persistence
-  sudo cp /etc/environment /etc/environment.bak 2>/dev/null || true
-  printf '%s\n' 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' | sudo tee /etc/environment >/dev/null 2>&1 || true
-fi
+# /etc/profile.d/ is sourced by login shells and DOES evaluate $PATH
+# /etc/environment is parsed by PAM and does NOT evaluate $PATH
+# So we put PATH fixes in /etc/profile.d/ instead
+sudo tee /etc/profile.d/vpsfree-path.sh > /dev/null << 'PEOF'
+# Fix PATH — /etc/environment cannot use $PATH variable expansion
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+PEOF
+sudo chmod +x /etc/profile.d/vpsfree-path.sh
+# Also export for current session
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
 # ---------- durasi (menit) ----------
 DUR="${DUR:-360}"; DUR="${DUR//[^0-9]/}"; [ -z "$DUR" ] && DUR=342
@@ -221,8 +225,8 @@ EOF
 # Auto-start Codex-Router + Cloudflared Tunnel via PM2
 # Usage: bash /root/run.sh
 
-# Fix PATH
-export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+# Fix PATH (use :$PATH to preserve existing PATH expansion)
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
 CLOUDFLARED_TOKEN="${CLOUDFLARED_TOKEN:-}"
 ROUTER_DIR="/root/Codex-Router"
