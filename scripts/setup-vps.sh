@@ -322,6 +322,30 @@ RUNEOF
   log 'router PM2 started.'
 fi
 
+# ---------- Antigravity CLI (agy) ----------
+if [ -f "/root/.local/bin/agy" ] || command -v agy >/dev/null 2>&1; then
+  log "agy: $(agy --version 2>/dev/null | head -1 || echo 'ok')"
+elif [ -f "/root/.local/bin/agy" ] && [ ! -x "/root/.local/bin/agy" ]; then
+  chmod +x /root/.local/bin/agy
+  log "agy: installed (chmod +x)"
+else
+  log 'menginstal agy (Antigravity CLI)...'
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL https://antigravity.google/cli/install.sh | bash 2>/dev/null || true
+    # Ensure agy is executable
+    [ -f /root/.local/bin/agy ] && chmod +x /root/.local/bin/agy
+    # Ensure PATH includes /root/.local/bin
+    if ! grep -q '/root/.local/bin' /etc/environment 2>/dev/null; then
+      echo 'PATH="/root/.local/bin:$PATH"' | sudo tee /etc/environment >/dev/null 2>&1 || true
+    fi
+    export PATH="/root/.local/bin:$PATH"
+    AGY_VER="$(/root/.local/bin/agy --version 2>/dev/null | head -1 || echo 'installed')"
+    log "agy: $AGY_VER"
+  else
+    log 'agy: curl not found — skipping'
+  fi
+fi
+
 # ---------- cloudflared (opsional) ----------
 if [ -n "${CLOUDFLARED_TOKEN:-}" ]; then
   log 'menginstal cloudflared...'
