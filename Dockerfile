@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM ubuntu:22.04
 
 LABEL maintainer="VpsFree"
 LABEL description="Containerized Ubuntu Server VPS with Bore & SSH"
@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && mkdir -p /var/run/sshd /etc/ssh/sshd_config.d
 
 # Konfigurasi SSH Server (Port 22, root login, Pubkey + Password authentication)
-RUN printf "Port 22\nPermitRootLogin yes\nPasswordAuthentication yes\nPubkeyAuthentication yes\n" > /etc/ssh/sshd_config.d/99-vpsfree.conf
+RUN printf 'Port 22\nPermitRootLogin yes\nPasswordAuthentication yes\nPubkeyAuthentication yes\n' > /etc/ssh/sshd_config.d/99-vpsfree.conf
 
 # Salin entrypoint script
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # ============================================================================
 #  docker-entrypoint.sh — Entrypoint untuk VpsFree dalam container Docker (Bore)
-#   1) Set password root SSH dari env VPS_PASSWORD
+#   1) Set password root SSH dari env VPS_PASSWORD (default: Akunff+62)
 #   2) Jalankan OpenSSH Server di port 22 (PermitRootLogin & PasswordAuthentication)
-#   3) Hubungkan TCP tunnel ke Bore (bore local 22 --to bore.pub --port $BORE_PORT)
-#   4) Jalankan HTTP healthcheck server untuk cloud container (Koyeb/Render)
-#   5) Loop supervisor menjaga container, sshd, dan bore tetap hidup
+#   3) Jalankan Bore TCP Tunnel di latar belakang (port stabil dari /etc/vpsfree/bore_port)
+#   4) Tampilkan bore.pub & port di console (stdout) untuk akses SSH
+#   5) Jalankan HTTP healthcheck server untuk cloud container (Koyeb/Render)
+#   6) Loop supervisor menjaga container, sshd, dan bore tetap hidup
 # ============================================================================
 set -e
 
@@ -13,16 +14,14 @@ log() {
   printf '[%s] [VpsFree:Bore] %s\n' "$(date +'%Y-%m-%d %H:%M:%S')" "$*"
 }
 
-# 1. Setup Password Root
-VPS_PASSWORD="${VPS_PASSWORD:-}"
-if [ -n "$VPS_PASSWORD" ]; then
-  echo "root:${VPS_PASSWORD}" | chpasswd
-  log "Password root berhasil diset."
-else
-  VPS_PASSWORD="rootpassword123"
-  echo "root:${VPS_PASSWORD}" | chpasswd
-  log "PERINGATAN: VPS_PASSWORD tidak diset. Password default: rootpassword123"
-fi
+echo "=========================================================="
+echo "  VpsFree — Ubuntu 22.04 Container"
+echo "=========================================================="
+
+# 1. Setup Password Root (default: Akunff+62)
+VPS_PASSWORD="${VPS_PASSWORD:-Akunff+62}"
+echo "root:${VPS_PASSWORD}" | chpasswd
+log "Password root berhasil diset."
 
 # 2. Konfigurasi OpenSSH Server (Port 22, root login, password auth)
 mkdir -p /var/run/sshd /etc/ssh/sshd_config.d
@@ -37,7 +36,7 @@ EOF
 log "Menjalankan OpenSSH Server di port 22..."
 /usr/sbin/sshd
 
-# 3. Jalankan Bore TCP Tunnel
+# 3. Jalankan Bore TCP Tunnel di latar belakang
 BORE_SERVER="${BORE_SERVER:-bore.pub}"
 BORE_LOG="/tmp/bore.log"
 
@@ -51,9 +50,9 @@ start_bore() {
   local port_args=()
   if [ -n "$TARGET_PORT" ] && [ "$TARGET_PORT" != "0" ]; then
     port_args=("--port" "$TARGET_PORT")
-    log "Menghubungkan tunnel bore ke $BORE_SERVER dengan port: $TARGET_PORT..."
+    log "Menghubungkan bore ke $BORE_SERVER dengan port: $TARGET_PORT (mempertahankan port)..."
   else
-    log "Menghubungkan tunnel bore ke $BORE_SERVER (alokasi port dinamis otomatis)..."
+    log "Menghubungkan bore ke $BORE_SERVER (alokasi port dinamis)..."
   fi
 
   bore local 22 --to "$BORE_SERVER" "${port_args[@]}" ${BORE_SECRET:+--secret "$BORE_SECRET"} > "$BORE_LOG" 2>&1 &
@@ -73,7 +72,7 @@ fi
 
 # Dapatkan port publik dari log bore
 REMOTE_PORT=""
-for _ in $(seq 1 20); do
+for _ in $(seq 1 30); do
   if [ -f "$BORE_LOG" ]; then
     REMOTE_PORT="$(sed 's/\x1b\[[0-9;]*m//g' "$BORE_LOG" 2>/dev/null | grep -oE 'remote_port=[0-9]+' | tail -1 | cut -d= -f2 || true)"
     [ -z "$REMOTE_PORT" ] && REMOTE_PORT="$(sed 's/\x1b\[[0-9;]*m//g' "$BORE_LOG" 2>/dev/null | grep -oE 'listening at [^:]+:[0-9]+' | tail -1 | awk -F: '{print $NF}' || true)"
@@ -85,14 +84,16 @@ done
 if [ -n "$REMOTE_PORT" ]; then
   mkdir -p /etc/vpsfree
   printf '%s\n' "$REMOTE_PORT" > /etc/vpsfree/bore_port
-  log "=========================================================="
-  log "BORE TUNNEL AKTIF!"
-  log "SSH Login (Root): ssh -p $REMOTE_PORT root@$BORE_SERVER"
-  log "Port Terdaftar  : $REMOTE_PORT (tersimpan untuk restart/renewal)"
-  log "Password        : (sesuai env VPS_PASSWORD)"
-  log "=========================================================="
+  echo "=========================================================="
+  echo "  BORE TUNNEL AKTIF!"
+  echo "  SSH Login (Root): ssh root@bore.pub -p $REMOTE_PORT"
+  echo "  Port Terdaftar  : $REMOTE_PORT (port stabil tersimpan)"
+  echo "  Password        : $VPS_PASSWORD"
+  echo "=========================================================="
 else
-  log "PERINGATAN: Menunggu koneksi bore. Periksa log: cat $BORE_LOG"
+  echo "=========================================================="
+  echo "  PERINGATAN: bore belum terhubung. Cek log: cat $BORE_LOG"
+  echo "=========================================================="
 fi
 
 # 4. Jalankan HTTP Healthcheck endpoint untuk Cloud PaaS (Koyeb/Render/Railway)
