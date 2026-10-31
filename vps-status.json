@@ -30,5 +30,9 @@
       "note": "Akses SSH via Bore tunnel: ssh -p 34333 root@bore.pub"
     }
   },
-  "ssh_command": "ssh -p 34333 root@bore.pub"
+  "ssh_command": "ssh -p 34333 root@bore.pub",
+  "handover": {
+    "status": "dispatched",
+    "at": "2026-10-31T21:52:44Z"
+  }
 }
