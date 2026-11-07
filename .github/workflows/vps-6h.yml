@@ -29,6 +29,14 @@ on:
           - ubuntu-22.04
           - ubuntu-24.04
           - ubuntu-26.04
+      install_flutter:
+        description: 'Install Flutter SDK + Android SDK di VPS (butuh ±10 menit & 8GB)'
+        required: false
+        default: 'tidak'
+        type: choice
+        options:
+          - ya
+          - tidak
       perpanjang_otomatis:
         description: 'Lanjutkan otomatis ke sesi berikutnya sebelum waktu habis (data & port bore tetap)'
         required: false
@@ -56,6 +64,7 @@ jobs:
       VPS_USER: ${{ inputs.vps_user || 'vps' }}
       RUNNER_IMAGE: ${{ inputs.runner || 'ubuntu-24.04' }}
       PERPANJANG_OTOMATIS: ${{ inputs.perpanjang_otomatis || 'ya' }}
+      INSTALL_FLUTTER: ${{ inputs.install_flutter || 'tidak' }}
       VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
       VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY || '' }}
       BORE_PORT: ${{ secrets.BORE_PORT || '' }}
@@ -81,6 +90,12 @@ jobs:
 
       - name: Setup akses Bore (SSH Publik)
         run: bash scripts/setup-akses.sh
+
+      - name: Install Flutter + Android SDK (opsional, input install_flutter)
+        if: ${{ (inputs.install_flutter || 'tidak') == 'ya' }}
+        continue-on-error: true
+        timeout-minutes: 20
+        run: bash scripts/install-flutter.sh
 
       - name: Publish status aktif
         continue-on-error: true

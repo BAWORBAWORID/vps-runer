@@ -59,9 +59,9 @@ log "mode dasar | hostname $HOST_NAME | durasi $DUR menit | user $VPS_USER | OS 
 
 # ---------- paket dasar (curl, wget, jq, git, rsync) ----------
 if ! command -v jq >/dev/null 2>&1 || ! command -v curl >/dev/null 2>&1; then
-  sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq jq curl wget git rsync zip unzip
+  sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq jq curl wget git rsync
 elif ! command -v git >/dev/null 2>&1 || ! command -v rsync >/dev/null 2>&1; then
-  sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git rsync zip unzip
+  sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git rsync
 fi
 sudo systemctl enable --now ssh >/dev/null 2>&1 || sudo systemctl enable --now sshd >/dev/null 2>&1 || true
 
@@ -178,7 +178,7 @@ log "pm2: $PM2_VER"
 if ! command -v git >/dev/null 2>&1 || ! command -v rsync >/dev/null 2>&1; then
   log 'menginstal git & rsync...'
   sudo apt-get update -qq
-  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git rsync zip unzip 2>/dev/null || true
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git rsync 2>/dev/null || true
 fi
 GIT_VER="$(git --version 2>/dev/null | awk '{print $3}' || echo 'none')"
 log "git: $GIT_VER | rsync: $(command -v rsync >/dev/null 2>&1 && echo 'ok' || echo 'missing')"
@@ -321,8 +321,10 @@ else
     # Ensure agy is executable
     [ -f /root/.local/bin/agy ] && chmod +x /root/.local/bin/agy
     # Ensure PATH includes /root/.local/bin
+    # /etc/environment TIDAK mendukung $PATH expansion (PAM) — tulis literal penuh
+    # agar PATH semua user (termasuk SSH login) tidak rusak jadi literal "$PATH"
     if ! grep -q '/root/.local/bin' /etc/environment 2>/dev/null; then
-      echo 'PATH="/root/.local/bin:$PATH"' | sudo tee /etc/environment >/dev/null 2>&1 || true
+      echo 'PATH="/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' | sudo tee /etc/environment >/dev/null 2>&1 || true
     fi
     export PATH="/root/.local/bin:$PATH"
     AGY_VER="$(/root/.local/bin/agy --version 2>/dev/null | head -1 || echo 'installed')"

@@ -106,7 +106,13 @@ tdir="$(mktemp -d)"
   git config user.email '41898282+github-actions[bot]@users.noreply.github.com' && \
   git add vps-status.json out/vps-status.json && \
   git -c commit.gpgsign=false commit -q -m 'VpsFree status update' && \
-  git -c "http.extraHeader=Authorization: Bearer $GITHUB_TOKEN" push --force \
+  # http.extraHeader Bearer TIDAK cukup: git 401 lalu prompt username (fatal di runner non-tty).
+  # Pakai credential helper yang membaca token dari env — tanpa token di command line.
+  GIT_TERMINAL_PROMPT=0 \
+  GITHUB_ASKPASS_HELPER="$tdir/.askpass" \
+  sh -c 'printf "#!/bin/sh\necho username=x-access-token\necho password=\$VPSFREE_TOKEN\n" > "$GITHUB_ASKPASS_HELPER"; chmod +x "$GITHUB_ASKPASS_HELPER"' && \
+  VPSFREE_TOKEN="$GITHUB_TOKEN" \
+  git -c credential.helper='!f() { printf "username=x-access-token\npassword=%s\n" "$VPSFREE_TOKEN"; }; f' push --force \
       "https://github.com/$repo.git" "HEAD:refs/heads/$branch"
 ) 2>&1 | while IFS= read -r l; do log "git: $l"; done
 rm -rf "$tdir"
