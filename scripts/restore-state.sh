@@ -78,6 +78,9 @@ else
 fi
 
 if id -u "$u" >/dev/null 2>&1 && [ -d "$home" ]; then sudo chown -R "$u:$u" "$home" 2>/dev/null || true; fi
+# Bersihkan sisa profile dari sesi lama yang men-source /etc/profile.d/flutter.sh
+# (jika sesi itu install-flutter lalu file profile.d tidak ikut tersimpan → error saat login)
+sudo sed -i '/profile\.d\/flutter\.sh/d' "$home/.bashrc" "$home/.profile" 2>/dev/null || true
 sudo chmod 755 /etc/ssh/sshd_config.d 2>/dev/null || true
 [ -d /etc/vpsfree ] && sudo chmod 755 /etc/vpsfree 2>/dev/null || true
 
