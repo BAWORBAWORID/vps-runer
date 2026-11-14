@@ -1,6 +1,6 @@
 {
-  "active": false,
-  "hostname": "vpsfree-119",
+  "active": true,
+  "hostname": "vpsfree-120",
   "os": "Ubuntu 24.04.5 LTS",
   "kernel": "7.0.0-1017-azure",
   "cpu_threads": 4,
@@ -9,31 +9,26 @@
   "ssh_port": 22,
   "ssh_user": "vps",
   "ssh_listen": "ok",
-  "public_ip": "",
-  "bore_server": "",
-  "bore_port": "",
-  "started_at": "2026-11-13T20:48:42Z",
-  "expires_at": "2026-11-14T02:28:42Z",
+  "public_ip": "40.83.3.134",
+  "bore_server": "bore.pub",
+  "bore_port": "62267",
+  "started_at": "2026-11-14T02:35:53Z",
+  "expires_at": "2026-11-14T08:15:53Z",
   "duration_menit": 340,
-  "run_id": "43501243275",
+  "run_id": "43545068220",
   "run_attempt": "1",
-  "run_number": "119",
-  "run_url": "https://github.com/BAWORBAWORID/vps-runer/actions/runs/43501243275",
+  "run_number": "120",
+  "run_url": "https://github.com/BAWORBAWORID/vps-runer/actions/runs/43545068220",
   "mode": "vpsfree",
   "akses": {
     "mode": "bore",
     "bore": {
-      "status": "offline",
-      "server": "",
-      "port": "",
+      "status": "ok",
+      "server": "bore.pub",
+      "port": "62267",
       "command_root": "ssh -p 62267 root@bore.pub",
       "note": "Akses SSH via Bore tunnel: ssh -p 62267 root@bore.pub"
     }
   },
-  "ssh_command": "",
-  "handover": {
-    "status": "dispatched",
-    "at": "2026-11-14T02:13:24Z"
-  },
-  "stopped_at": "2026-11-14T02:34:28Z"
+  "ssh_command": "ssh -p 62267 root@bore.pub"
 }
